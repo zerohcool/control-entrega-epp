@@ -1,0 +1,209 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  background-color: #f6fafe; /* surface / background */
+  color: #171c1f; /* on-surface */
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Material Symbols settings */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Webkit Scrollbars styling matching the industrial modern layout */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f4f8; /* surface-container-low */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5c6cd; /* outline-variant */
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #75777d; /* outline */
+}
+
+
+/* Hide native number input spinners globally to leave only styled +/- buttons */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Loader modal styles */
+div#loader_overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(206, 203, 196, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+div#loader_container {
+  width: 300px;
+  text-align: center;
+}
+div#bar_container {
+  height: 24px;
+  background: #dcdbd7;
+  border-radius: 20px;
+  border-top: 1px solid #cfcec9;
+  border-bottom: 1px solid #f7f6f4;
+  box-shadow: 0 -1px 0 #bab9b4;
+  margin-bottom: 24px;
+  position: relative;
+}
+div#progress_bar {
+  background-color: #dcf1c6;
+  background-image: linear-gradient(to bottom, #9fbff4 0%, #555bb4 100%);
+  height: 110%;
+  position: absolute;
+  top: -3px;
+  left: 0px;
+  border-top: 1px solid #e5ebf4;
+  border-radius: 20px;
+  box-shadow: 0 3px 10px #717171;
+  transition: width 0.1s ease-in-out;
+}
+div#progress_percentage {
+  position: absolute;
+  top: -40px;
+  right: -10px;
+  width: 42px;
+  height: 24px;
+  padding-top: 6px;
+  background: #edeef2;
+  background-image: linear-gradient(to bottom, #edeef2 0%, #c9c9d3 100%);
+  border-top: 1px solid white;
+  border-right: 1px solid #d2d2d0;  
+  border-bottom: 1px solid #999999;
+  border-left: 1px solid #d2d2d0;
+  border-radius: 7px;
+  font-size: 10px;
+  color: #737371;
+  text-shadow: 0 0 2px #bebfc3;
+  box-shadow: 0 2px 5px #c1c1bf;
+}
+div#progress_percentage::before { /* used for the border of the arrow */
+  content: "";
+  position: absolute;
+  left: 14px;
+  bottom: -11px;
+  border-top: 5px solid #999;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 5px solid transparent;
+}
+div#progress_percentage::after { /* the actual little arrow in the baloon */
+  content: "";
+  position: absolute;
+  left: 14px;
+  bottom: -10px;
+  border-top: 5px solid #c9c9d3;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 5px solid transparent;
+}
+div#text_container {
+  color: #757575;
+  font-weight: bold; 
+  font-size: 22px;
+  text-shadow: -1px 1px 1px #d1d0cc;
+}
+div#text_container span {
+  display: block;
+  font-weight: normal;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+/* Optimization for sheet printing (window.print()) */
+@media print {
+  /* Hide headers, sidebars, footers, buttons and other UI elements */
+  header, footer, aside, nav, button, .no-print, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force background colors, charts and images to print exactly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Set Letter size and margins */
+  @page {
+    size: letter;
+    margin: 0.8cm;
+  }
+
+  /* Maintain original colors, background, and let layout render naturally */
+  html, body, main {
+    background: #f6fafe !important; /* Original light background */
+    color: #171c1f !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Zoom the layout to fit perfectly on Letter format without breaking elements or sizes */
+  body {
+    zoom: 78% !important;
+  }
+
+  /* Ensure Material Symbols render correctly with the correct font family */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;
+  }
+
+  /* Keep border colors visible */
+  .border, .border-outline-variant, .border-outline-variant\/60, .border-outline-variant\/30, .border-outline-variant\/20, .border-outline-variant\/40 {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Avoid page breaks inside layout blocks and table rows */
+  .bg-white, .border, article, tr {
+    page-break-inside: avoid;
+  }
+}
+
+
+
