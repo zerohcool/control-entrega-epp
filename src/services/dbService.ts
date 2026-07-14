@@ -291,29 +291,39 @@ const DEFAULT_ADMINS: AdminUser[] = [
 ];
 
 class DBService {
+  private seedingPromise: Promise<void> | null = null;
+
   // Check and seed databases dynamically on startup if they have 0 records
   private async seedIfEmpty(): Promise<void> {
-    try {
-      const { count, error } = await supabase.from('epp_items').select('*', { count: 'exact', head: true });
-      if (error) {
-        console.error('Error al verificar existencias en Supabase:', error);
-        return;
-      }
-      
-      if (count === 0) {
-        console.log('Detectada base de datos vacía. Sembrando datos iniciales en Supabase...');
-        // Insert in logical sequence of relationships
-        await supabase.from('suppliers').insert(DEFAULT_SUPPLIERS);
-        await supabase.from('epp_items').insert(DEFAULT_EPP_ITEMS);
-        await supabase.from('workers').insert(DEFAULT_WORKERS);
-        await supabase.from('admins').insert(DEFAULT_ADMINS);
-        await supabase.from('stock_replenishments').insert(DEFAULT_STOCK_REPLENISHMENTS);
-        await supabase.from('deliveries').insert(DEFAULT_DELIVERIES);
-        console.log('Sembrado completado con éxito.');
-      }
-    } catch (err) {
-      console.error('Fallo crítico al sembrar datos en Supabase:', err);
+    if (this.seedingPromise) {
+      return this.seedingPromise;
     }
+
+    this.seedingPromise = (async () => {
+      try {
+        const { count, error } = await supabase.from('epp_items').select('*', { count: 'exact', head: true });
+        if (error) {
+          console.error('Error al verificar existencias en Supabase:', error.message);
+          return;
+        }
+        
+        if (count === 0) {
+          console.log('Detectada base de datos vacía. Sembrando datos iniciales en Supabase...');
+          // Insert in logical sequence of relationships
+          await supabase.from('suppliers').insert(DEFAULT_SUPPLIERS);
+          await supabase.from('epp_items').insert(DEFAULT_EPP_ITEMS);
+          await supabase.from('workers').insert(DEFAULT_WORKERS);
+          await supabase.from('admins').insert(DEFAULT_ADMINS);
+          await supabase.from('stock_replenishments').insert(DEFAULT_STOCK_REPLENISHMENTS);
+          await supabase.from('deliveries').insert(DEFAULT_DELIVERIES);
+          console.log('Sembrado completado con éxito.');
+        }
+      } catch (err) {
+        console.error('Fallo crítico al sembrar datos en Supabase:', err);
+      }
+    })();
+
+    return this.seedingPromise;
   }
 
   // --- EPP ITEMS ---
