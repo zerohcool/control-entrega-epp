@@ -1,21 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { EPPItem, Worker, DeliveryWithDetails, Supplier, StockReplenishment, HistoryLog, AdminUser } from '../models/types';
 import { dbService } from '../services/dbService';
+import type { EPPItem, Worker, DeliveryWithDetails, Supplier, StockReplenishment, HistoryLog, AdminUser } from '../models/types';
 
-export type ViewType = 'login' | 'worker-search' | 'worker-profile' | 'catalog' | 'admin-dashboard' | 'reports';
+export type ViewType = 'login' | 'worker-profile' | 'catalog' | 'worker-search' | 'admin-dashboard' | 'reports';
 
-interface UserSession {
-  role: 'admin' | 'worker';
-  username?: string;
-  workerId?: string;
-}
-
-interface CartItem {
+export interface CartItem {
   item: EPPItem;
   quantity: number;
 }
 
-interface AlertNotification {
+export interface UserSession {
+  role: 'admin' | 'worker';
+  workerId?: string; // If worker role
+  username?: string; // If admin role
+}
+
+export interface AlertNotification {
   message: string;
   type: 'success' | 'error' | 'warning';
 }
@@ -39,7 +39,7 @@ interface AppContextType {
   clearCart: () => void;
   submitCartRequest: (notes?: string) => boolean;
   setAlert: (message: string, type: 'success' | 'error' | 'warning', duration?: number) => void;
-  refreshData: () => void;
+  refreshData: () => Promise<void>;
   approveRequest: (deliveryId: string) => void;
   rejectRequest: (deliveryId: string) => void;
   quickAddStock: (sku: string, quantity: number) => boolean;
@@ -69,8 +69,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeView, setActiveView] = useState<ViewType>('login');
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [alert, setAlertNotification] = useState<AlertNotification | null>(null);
+  const [alertNotification, setAlertNotification] = useState<AlertNotification | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Request Submission loaders
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [submissionProgress, setSubmissionProgress] = useState(10);
 
@@ -82,14 +84,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [historyLogs, setHistoryLogs] = useState<HistoryLog[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
 
-  // Load initial data
-  const refreshData = () => {
-    setWorkers(dbService.getWorkers());
-    setEppItems(dbService.getEPPItems());
-    setDeliveries(dbService.getDeliveriesWithDetails());
-    setSuppliers(dbService.getSuppliers());
-    setHistoryLogs(dbService.getHistoryLogs());
-    setAdmins(dbService.getAdmins());
+  // Load initial data from Supabase
+  const refreshData = async () => {
+    try {
+      const [workersList, eppItemsList, deliveriesList, suppliersList, historyLogsList, adminsList] = await Promise.all([
+        dbService.getWorkers(),
+        dbService.getEPPItems(),
+        dbService.getDeliveriesWithDetails(),
+        dbService.getSuppliers(),
+        dbService.getHistoryLogs(),
+        dbService.getAdmins()
+      ]);
+      setWorkers(workersList);
+      setEppItems(eppItemsList);
+      setDeliveries(deliveriesList);
+      setSuppliers(suppliersList);
+      setHistoryLogs(historyLogsList);
+      setAdmins(adminsList);
+    } catch (err) {
+      console.error('Error al recargar datos de Supabase:', err);
+    }
   };
 
   useEffect(() => {
@@ -103,8 +117,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, duration);
   };
 
+  // Synchronous checks against the loaded local React states for high speed interactions
   const loginAsAdmin = (username: string, password_hash: string): boolean => {
-    const admin = dbService.verifyAdminCredentials(username, password_hash);
+    const admin = admins.find(a => 
+      a.username.toLowerCase().trim() === username.toLowerCase().trim() &&
+      a.password_hash === password_hash
+    );
     if (admin) {
       const session: UserSession = { role: 'admin', username: admin.username };
       setUser(session);
@@ -117,7 +135,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const loginAsWorker = (rut: string): boolean => {
-    const worker = dbService.getWorkerByRut(rut);
+    const cleanRut = rut.replace(/[\.-]/g, '').trim().toLowerCase();
+    const worker = workers.find(w => w.rut.replace(/[\.-]/g, '').trim().toLowerCase() === cleanRut);
     if (worker) {
       if (worker.status !== 'Activo') {
         setAlert('El trabajador se encuentra inactivo en el sistema', 'error');
@@ -184,21 +203,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
 
-    // Determine target worker ID
     const targetWorkerId = user?.role === 'worker' ? user.workerId : selectedWorkerId;
     if (!targetWorkerId) {
       setAlert('No hay ningún trabajador seleccionado para la entrega', 'error');
       return false;
     }
 
-    // Start submission loader animation
     setIsSubmittingRequest(true);
     setSubmissionProgress(10);
 
     const startTime = Date.now();
     const duration = 3000; // 3 seconds
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(100, 10 + Math.floor((elapsed / duration) * 90));
       
@@ -207,34 +224,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (elapsed >= duration) {
         clearInterval(interval);
         
-        // Generate single request number for the transaction
-        const nextRequestNum = dbService.generateNextRequestNumber();
+        try {
+          const nextRequestNum = await dbService.generateNextRequestNumber();
 
-        // Finalize transaction insertion
-        cart.forEach(cartItem => {
-          dbService.createDelivery({
-            worker_id: targetWorkerId,
-            epp_id: cartItem.item.id,
-            quantity: cartItem.quantity,
-            status: 'Pendiente', // Always pending so it appears on the dashboard to approve
-            delivered_at: null,
-            notes: notes || (user?.role === 'admin' ? 'Ingresado por administrador' : 'Solicitado por el trabajador'),
-            request_number: nextRequestNum
-          });
-        });
+          // Push all deliveries to Supabase in parallel
+          await Promise.all(cart.map(cartItem => 
+            dbService.createDelivery({
+              worker_id: targetWorkerId,
+              epp_id: cartItem.item.id,
+              quantity: cartItem.quantity,
+              status: 'Pendiente',
+              delivered_at: null,
+              notes: notes || (user?.role === 'admin' ? 'Ingresado por administrador' : 'Solicitado por el trabajador'),
+              request_number: nextRequestNum
+            })
+          ));
 
-        clearCart();
-        refreshData();
-        setIsSubmittingRequest(false);
+          clearCart();
+          await refreshData();
+          setIsSubmittingRequest(false);
 
-        if (user?.role === 'admin') {
-          setAlert('Solicitud de EPP creada con éxito', 'success');
-          navigate('admin-dashboard');
-        } else {
-          setUser(null);
-          setSelectedWorkerId(null);
-          setActiveView('login');
-          setAlert('Solicitud de EPP enviada al Administrador. Sesión cerrada.', 'success');
+          if (user?.role === 'admin') {
+            setAlert('Solicitud de EPP creada con éxito', 'success');
+            navigate('admin-dashboard');
+          } else {
+            setUser(null);
+            setSelectedWorkerId(null);
+            setActiveView('login');
+            setAlert('Solicitud de EPP enviada al Administrador. Sesión cerrada.', 'success');
+          }
+        } catch (err) {
+          console.error(err);
+          setAlert('Error al enviar la solicitud a la base de datos', 'error');
+          setIsSubmittingRequest(false);
         }
       }
     }, 50);
@@ -242,94 +264,119 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const approveRequest = (deliveryId: string) => {
-    const success = dbService.approveDelivery(deliveryId);
+  const approveRequest = async (deliveryId: string) => {
+    const success = await dbService.approveDelivery(deliveryId);
     if (success) {
-      refreshData();
+      await refreshData();
       setAlert('Solicitud aprobada y stock actualizado', 'success');
     } else {
       setAlert('Error al aprobar: Stock insuficiente', 'error');
     }
   };
 
-  const rejectRequest = (deliveryId: string) => {
-    const success = dbService.rejectDelivery(deliveryId);
+  const rejectRequest = async (deliveryId: string) => {
+    const success = await dbService.rejectDelivery(deliveryId);
     if (success) {
-      refreshData();
+      await refreshData();
       setAlert('Solicitud rechazada', 'warning');
     }
   };
 
   const quickAddStock = (sku: string, quantity: number): boolean => {
-    const item = dbService.addEPPItemStockBySku(sku, quantity);
-    if (item) {
-      refreshData();
-      setAlert(`Stock incrementado para ${item.name} (+${quantity})`, 'success');
-      return true;
+    // Keep quickAddStock signature synchronous. We invoke asynchronous operation in background
+    dbService.addEPPItemStockBySku(sku, quantity).then((item) => {
+      if (item) {
+        refreshData();
+        setAlert(`Stock incrementado para ${item.name} (+${quantity})`, 'success');
+      } else {
+        setAlert(`No se encontró ningún artículo con SKU "${sku}"`, 'error');
+      }
+    }).catch(err => {
+      console.error(err);
+      setAlert('Error al reabastecer stock', 'error');
+    });
+    return true;
+  };
+
+  const registerWorker = async (workerData: Omit<Worker, 'id' | 'created_at' | 'status'>) => {
+    const res = await dbService.createWorker(workerData);
+    if (res) {
+      await refreshData();
+      setAlert(`Trabajador ${workerData.first_name} ${workerData.last_name} registrado con éxito`, 'success');
+    } else {
+      setAlert('Error al registrar colaborador', 'error');
     }
-    setAlert(`No se encontró ningún artículo con SKU "${sku}"`, 'error');
-    return false;
   };
 
-  const registerWorker = (workerData: Omit<Worker, 'id' | 'created_at' | 'status'>) => {
-    dbService.createWorker(workerData);
-    refreshData();
-    setAlert(`Trabajador ${workerData.first_name} ${workerData.last_name} registrado con éxito`, 'success');
+  const registerSupplier = async (supplierData: Omit<Supplier, 'id' | 'created_at'>) => {
+    const res = await dbService.createSupplier(supplierData);
+    if (res) {
+      await refreshData();
+      setAlert(`Proveedor ${supplierData.name} registrado con éxito`, 'success');
+    } else {
+      setAlert('Error al registrar proveedor', 'error');
+    }
   };
 
-  const registerSupplier = (supplierData: Omit<Supplier, 'id' | 'created_at'>) => {
-    dbService.createSupplier(supplierData);
-    refreshData();
-    setAlert(`Proveedor ${supplierData.name} registrado con éxito`, 'success');
+  const registerStockReplenishment = async (replenishmentData: Omit<StockReplenishment, 'id' | 'created_at'>) => {
+    const res = await dbService.createStockReplenishment(replenishmentData);
+    if (res) {
+      await refreshData();
+      const item = eppItems.find(i => i.id === replenishmentData.epp_id);
+      setAlert(`Ingreso de stock registrado con éxito para ${item?.name || 'EPP'}`, 'success');
+    } else {
+      setAlert('Error al registrar reabastecimiento', 'error');
+    }
   };
 
-  const registerStockReplenishment = (replenishmentData: Omit<StockReplenishment, 'id' | 'created_at'>) => {
-    dbService.createStockReplenishment(replenishmentData);
-    refreshData();
-    const item = dbService.getEPPItemById(replenishmentData.epp_id);
-    setAlert(`Ingreso de stock registrado con éxito para ${item?.name || 'EPP'}`, 'success');
-  };
-
-  const updateWorker = (worker: Worker) => {
-    dbService.updateWorker(worker);
-    refreshData();
+  const updateWorker = async (worker: Worker) => {
+    await dbService.updateWorker(worker);
+    await refreshData();
     setAlert(`Colaborador ${worker.first_name} ${worker.last_name} actualizado con éxito`, 'success');
   };
 
-  const updateSupplier = (supplier: Supplier) => {
-    dbService.updateSupplier(supplier);
-    refreshData();
+  const updateSupplier = async (supplier: Supplier) => {
+    await dbService.updateSupplier(supplier);
+    await refreshData();
     setAlert(`Proveedor ${supplier.name} actualizado con éxito`, 'success');
   };
 
-  const updateEPPItem = (item: EPPItem) => {
-    dbService.updateEPPItem(item);
-    refreshData();
+  const updateEPPItem = async (item: EPPItem) => {
+    await dbService.updateEPPItem(item);
+    await refreshData();
     setAlert(`Producto ${item.name} actualizado con éxito`, 'success');
   };
 
-  const registerEPPItem = (itemData: Omit<EPPItem, 'id' | 'created_at'>) => {
-    dbService.createEPPItem(itemData);
-    refreshData();
-    setAlert(`Producto ${itemData.name} registrado con éxito`, 'success');
+  const registerEPPItem = async (itemData: Omit<EPPItem, 'id' | 'created_at'>) => {
+    const res = await dbService.createEPPItem(itemData);
+    if (res) {
+      await refreshData();
+      setAlert(`Producto ${itemData.name} registrado con éxito`, 'success');
+    } else {
+      setAlert('Error al registrar producto', 'error');
+    }
   };
 
-  const registerAdmin = (adminData: Omit<AdminUser, 'id' | 'created_at'>) => {
-    dbService.createAdmin(adminData);
-    refreshData();
-    setAlert(`Administrador ${adminData.username} registrado con éxito`, 'success');
+  const registerAdmin = async (adminData: Omit<AdminUser, 'id' | 'created_at'>) => {
+    const res = await dbService.createAdmin(adminData);
+    if (res) {
+      await refreshData();
+      setAlert(`Administrador ${adminData.username} registrado con éxito`, 'success');
+    } else {
+      setAlert('Error al registrar administrador', 'error');
+    }
   };
 
-  const updateAdmin = (admin: AdminUser) => {
-    dbService.updateAdmin(admin);
-    refreshData();
+  const updateAdmin = async (admin: AdminUser) => {
+    await dbService.updateAdmin(admin);
+    await refreshData();
     setAlert(`Administrador ${admin.username} actualizado con éxito`, 'success');
   };
 
-  const deleteAdmin = (id: string) => {
-    const success = dbService.deleteAdmin(id);
+  const deleteAdmin = async (id: string) => {
+    const success = await dbService.deleteAdmin(id);
     if (success) {
-      refreshData();
+      await refreshData();
       setAlert('Administrador eliminado con éxito', 'success');
     } else {
       setAlert('No se puede eliminar el único administrador del sistema', 'error');
@@ -342,7 +389,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeView,
       selectedWorkerId,
       cart,
-      alert,
+      alert: alertNotification,
       workers,
       eppItems,
       deliveries,

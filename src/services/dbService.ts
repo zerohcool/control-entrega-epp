@@ -1,18 +1,10 @@
+import { supabase } from './supabaseClient';
 import type { EPPItem, Worker, Delivery, DeliveryWithDetails, Supplier, StockReplenishment, StockReplenishmentWithDetails, HistoryLog, AdminUser } from '../models/types';
 
-// Helper to generate UUIDs
-const generateUUID = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-};
-
-// Seed Data
+// Seed Data with valid UUID strings to prevent PostgreSQL UUID format exceptions
 const DEFAULT_EPP_ITEMS: EPPItem[] = [
   {
-    id: 'epp-1',
+    id: '00000000-0000-0000-0000-000000000001',
     sku: 'REF-001',
     name: 'Casco de Seguridad ABS',
     description: 'Casco de protección industrial tipo I clase E. Ajuste rachet de alta precisión.',
@@ -25,7 +17,7 @@ const DEFAULT_EPP_ITEMS: EPPItem[] = [
     created_at: new Date(2023, 5, 10).toISOString()
   },
   {
-    id: 'epp-2',
+    id: '00000000-0000-0000-0000-000000000002',
     sku: 'REF-042',
     name: 'Guantes de Cuero Reforzado',
     description: 'Guante de descarne con refuerzo palmar. Alta resistencia a la abrasión y corte.',
@@ -38,7 +30,7 @@ const DEFAULT_EPP_ITEMS: EPPItem[] = [
     created_at: new Date(2023, 6, 12).toISOString()
   },
   {
-    id: 'epp-3',
+    id: '00000000-0000-0000-0000-000000000003',
     sku: 'REF-089',
     name: 'Chaleco Reflectante Clase 2',
     description: 'Chaleco de malla transpirable con cintas reflectantes de alta visibilidad de 5cm.',
@@ -51,7 +43,7 @@ const DEFAULT_EPP_ITEMS: EPPItem[] = [
     created_at: new Date(2023, 7, 15).toISOString()
   },
   {
-    id: 'epp-4',
+    id: '00000000-0000-0000-0000-000000000004',
     sku: 'REF-102',
     name: 'Botas de Seguridad Dieléctricas',
     description: 'Calzado de seguridad con puntera composite, libre de metales. Alta resistencia eléctrica.',
@@ -64,7 +56,7 @@ const DEFAULT_EPP_ITEMS: EPPItem[] = [
     created_at: new Date(2023, 8, 20).toISOString()
   },
   {
-    id: 'epp-5',
+    id: '00000000-0000-0000-0000-000000000005',
     sku: 'REF-015',
     name: 'Lentes de Seguridad Antiparra',
     description: 'Lentes de policarbonato con tratamiento anti-empañante y anti-rayaduras.',
@@ -80,7 +72,7 @@ const DEFAULT_EPP_ITEMS: EPPItem[] = [
 
 const DEFAULT_WORKERS: Worker[] = [
   {
-    id: 'worker-1',
+    id: '11111111-1111-1111-1111-111111111101',
     rut: '15.342.198-K',
     first_name: 'Carlos',
     last_name: 'Mendoza',
@@ -92,7 +84,7 @@ const DEFAULT_WORKERS: Worker[] = [
     created_at: new Date(2020, 4, 12).toISOString()
   },
   {
-    id: 'worker-2',
+    id: '11111111-1111-1111-1111-111111111102',
     rut: '12.345.678-9',
     first_name: 'Juan',
     last_name: 'Pérez Gómez',
@@ -104,7 +96,7 @@ const DEFAULT_WORKERS: Worker[] = [
     created_at: new Date(2021, 2, 22).toISOString()
   },
   {
-    id: 'worker-3',
+    id: '11111111-1111-1111-1111-111111111103',
     rut: '15.678.901-2',
     first_name: 'María',
     last_name: 'Soto Silva',
@@ -116,7 +108,7 @@ const DEFAULT_WORKERS: Worker[] = [
     created_at: new Date(2019, 8, 14).toISOString()
   },
   {
-    id: 'worker-4',
+    id: '11111111-1111-1111-1111-111111111104',
     rut: '18.987.654-3',
     first_name: 'Ana',
     last_name: 'Silva Rivas',
@@ -128,7 +120,7 @@ const DEFAULT_WORKERS: Worker[] = [
     created_at: new Date(2022, 10, 5).toISOString()
   },
   {
-    id: 'worker-5',
+    id: '11111111-1111-1111-1111-111111111105',
     rut: '14.234.567-8',
     first_name: 'Luis',
     last_name: 'Rojas Díaz',
@@ -143,7 +135,7 @@ const DEFAULT_WORKERS: Worker[] = [
 
 const DEFAULT_SUPPLIERS: Supplier[] = [
   {
-    id: 'sup-1',
+    id: '22222222-2222-2222-2222-222222222201',
     name: '3M Seguridad Industrial',
     rut: '76.123.456-9',
     contact: 'Ignacio Fuentes',
@@ -152,7 +144,7 @@ const DEFAULT_SUPPLIERS: Supplier[] = [
     created_at: new Date(2022, 1, 15).toISOString()
   },
   {
-    id: 'sup-2',
+    id: '22222222-2222-2222-2222-222222222202',
     name: 'MSA Safety Chile',
     rut: '89.456.789-2',
     contact: 'Patricia Romero',
@@ -161,7 +153,7 @@ const DEFAULT_SUPPLIERS: Supplier[] = [
     created_at: new Date(2022, 3, 20).toISOString()
   },
   {
-    id: 'sup-3',
+    id: '22222222-2222-2222-2222-222222222203',
     name: 'Bata Industrials Calzado',
     rut: '79.789.123-5',
     contact: 'Roberto Muñoz',
@@ -170,7 +162,7 @@ const DEFAULT_SUPPLIERS: Supplier[] = [
     created_at: new Date(2022, 6, 10).toISOString()
   },
   {
-    id: 'sup-4',
+    id: '22222222-2222-2222-2222-222222222204',
     name: 'SteelPro Equipment',
     rut: '77.321.654-7',
     contact: 'Mónica Salazar',
@@ -181,11 +173,10 @@ const DEFAULT_SUPPLIERS: Supplier[] = [
 ];
 
 const DEFAULT_DELIVERIES: Delivery[] = [
-  // Carlos Mendoza (worker-1)
   {
-    id: 'del-1',
-    worker_id: 'worker-1',
-    epp_id: 'epp-1', // Casco
+    id: '44444444-4444-4444-4444-444444444401',
+    worker_id: '11111111-1111-1111-1111-111111111101',
+    epp_id: '00000000-0000-0000-0000-000000000001',
     quantity: 1,
     status: 'Entregado',
     delivered_at: '2023-11-12T08:30:00Z',
@@ -194,9 +185,9 @@ const DEFAULT_DELIVERIES: Delivery[] = [
     created_at: '2023-11-12T08:00:00Z'
   },
   {
-    id: 'del-2',
-    worker_id: 'worker-1',
-    epp_id: 'epp-2', // Guantes
+    id: '44444444-4444-4444-4444-444444444402',
+    worker_id: '11111111-1111-1111-1111-111111111101',
+    epp_id: '00000000-0000-0000-0000-000000000002',
     quantity: 2,
     status: 'Rechazado',
     delivered_at: '2023-11-05T09:15:00Z',
@@ -205,9 +196,9 @@ const DEFAULT_DELIVERIES: Delivery[] = [
     created_at: '2023-11-05T08:45:00Z'
   },
   {
-    id: 'del-3',
-    worker_id: 'worker-1',
-    epp_id: 'epp-5', // Lentes
+    id: '44444444-4444-4444-4444-444444444403',
+    worker_id: '11111111-1111-1111-1111-111111111101',
+    epp_id: '00000000-0000-0000-0000-000000000005',
     quantity: 1,
     status: 'Entregado',
     delivered_at: '2023-10-28T14:20:00Z',
@@ -216,9 +207,9 @@ const DEFAULT_DELIVERIES: Delivery[] = [
     created_at: '2023-10-28T14:00:00Z'
   },
   {
-    id: 'del-4',
-    worker_id: 'worker-1',
-    epp_id: 'epp-4', // Botas
+    id: '44444444-4444-4444-4444-444444444404',
+    worker_id: '11111111-1111-1111-1111-111111111101',
+    epp_id: '00000000-0000-0000-0000-000000000004',
     quantity: 1,
     status: 'Entregado',
     delivered_at: '2023-09-15T11:00:00Z',
@@ -227,9 +218,9 @@ const DEFAULT_DELIVERIES: Delivery[] = [
     created_at: '2023-09-15T10:30:00Z'
   },
   {
-    id: 'del-5',
-    worker_id: 'worker-1',
-    epp_id: 'epp-3', // Chaleco
+    id: '44444444-4444-4444-4444-444444444405',
+    worker_id: '11111111-1111-1111-1111-111111111101',
+    epp_id: '00000000-0000-0000-0000-000000000003',
     quantity: 1,
     status: 'Pendiente',
     delivered_at: null,
@@ -237,11 +228,10 @@ const DEFAULT_DELIVERIES: Delivery[] = [
     request_number: 'SOL-0005',
     created_at: '2023-11-13T10:15:00Z'
   },
-  // Juan Pérez (worker-2)
   {
-    id: 'del-6',
-    worker_id: 'worker-2',
-    epp_id: 'epp-1', // Casco
+    id: '44444444-4444-4444-4444-444444444406',
+    worker_id: '11111111-1111-1111-1111-111111111102',
+    epp_id: '00000000-0000-0000-0000-000000000001',
     quantity: 1,
     status: 'Pendiente',
     delivered_at: null,
@@ -249,11 +239,10 @@ const DEFAULT_DELIVERIES: Delivery[] = [
     request_number: 'SOL-0006',
     created_at: '2023-11-13T09:30:00Z'
   },
-  // Ana Silva (worker-4)
   {
-    id: 'del-7',
-    worker_id: 'worker-4',
-    epp_id: 'epp-2', // Guantes
+    id: '44444444-4444-4444-4444-444444444407',
+    worker_id: '11111111-1111-1111-1111-111111111104',
+    epp_id: '00000000-0000-0000-0000-000000000002',
     quantity: 2,
     status: 'Pendiente',
     delivered_at: null,
@@ -261,11 +250,10 @@ const DEFAULT_DELIVERIES: Delivery[] = [
     request_number: 'SOL-0007',
     created_at: '2023-11-13T08:45:00Z'
   },
-  // Luis Rojas (worker-5)
   {
-    id: 'del-8',
-    worker_id: 'worker-5',
-    epp_id: 'epp-5', // Lentes
+    id: '44444444-4444-4444-4444-444444444408',
+    worker_id: '11111111-1111-1111-1111-111111111105',
+    epp_id: '00000000-0000-0000-0000-000000000005',
     quantity: 1,
     status: 'Entregado',
     delivered_at: '2023-11-10T15:40:00Z',
@@ -276,14 +264,14 @@ const DEFAULT_DELIVERIES: Delivery[] = [
 ];
 
 const DEFAULT_STOCK_REPLENISHMENTS: StockReplenishment[] = [
-  { id: 'rep-1', epp_id: 'epp-1', supplier_id: 'sup-2', quantity: 100, created_at: new Date(2023, 9, 1).toISOString() },
-  { id: 'rep-2', epp_id: 'epp-3', supplier_id: 'sup-1', quantity: 200, created_at: new Date(2023, 9, 5).toISOString() },
-  { id: 'rep-3', epp_id: 'epp-5', supplier_id: 'sup-4', quantity: 500, created_at: new Date(2023, 9, 10).toISOString() }
+  { id: '55555555-5555-5555-5555-555555555501', epp_id: '00000000-0000-0000-0000-000000000001', supplier_id: '22222222-2222-2222-2222-222222222202', quantity: 100, created_at: new Date(2023, 9, 1).toISOString() },
+  { id: '55555555-5555-5555-5555-555555555502', epp_id: '00000000-0000-0000-0000-000000000003', supplier_id: '22222222-2222-2222-2222-222222222201', quantity: 200, created_at: new Date(2023, 9, 5).toISOString() },
+  { id: '55555555-5555-5555-5555-555555555503', epp_id: '00000000-0000-0000-0000-000000000005', supplier_id: '22222222-2222-2222-2222-222222222204', quantity: 500, created_at: new Date(2023, 9, 10).toISOString() }
 ];
 
 const DEFAULT_ADMINS: AdminUser[] = [
   {
-    id: 'admin-1',
+    id: '33333333-3333-3333-3333-333333333301',
     username: 'admin',
     first_name: 'Administrador',
     last_name: 'Principal',
@@ -292,7 +280,7 @@ const DEFAULT_ADMINS: AdminUser[] = [
     created_at: new Date(2023, 1, 1).toISOString()
   },
   {
-    id: 'admin-2',
+    id: '33333333-3333-3333-3333-333333333302',
     username: 'admin.almacen',
     first_name: 'Jaime',
     last_name: 'Valdés',
@@ -303,334 +291,300 @@ const DEFAULT_ADMINS: AdminUser[] = [
 ];
 
 class DBService {
-  private getStorageKey(key: string): string {
-    return `epp_control_${key}`;
-  }
-
-  private load<T>(key: string, defaultValue: T[]): T[] {
-    const data = localStorage.getItem(this.getStorageKey(key));
-    if (!data) {
-      localStorage.setItem(this.getStorageKey(key), JSON.stringify(defaultValue));
-      return defaultValue;
+  // Check and seed databases dynamically on startup if they have 0 records
+  private async seedIfEmpty(): Promise<void> {
+    try {
+      const { count, error } = await supabase.from('epp_items').select('*', { count: 'exact', head: true });
+      if (error) {
+        console.error('Error al verificar existencias en Supabase:', error);
+        return;
+      }
+      
+      if (count === 0) {
+        console.log('Detectada base de datos vacía. Sembrando datos iniciales en Supabase...');
+        // Insert in logical sequence of relationships
+        await supabase.from('suppliers').insert(DEFAULT_SUPPLIERS);
+        await supabase.from('epp_items').insert(DEFAULT_EPP_ITEMS);
+        await supabase.from('workers').insert(DEFAULT_WORKERS);
+        await supabase.from('admins').insert(DEFAULT_ADMINS);
+        await supabase.from('stock_replenishments').insert(DEFAULT_STOCK_REPLENISHMENTS);
+        await supabase.from('deliveries').insert(DEFAULT_DELIVERIES);
+        console.log('Sembrado completado con éxito.');
+      }
+    } catch (err) {
+      console.error('Fallo crítico al sembrar datos en Supabase:', err);
     }
-    return JSON.parse(data);
-  }
-
-  private save<T>(key: string, data: T[]): void {
-    localStorage.setItem(this.getStorageKey(key), JSON.stringify(data));
   }
 
   // --- EPP ITEMS ---
-  getEPPItems(): EPPItem[] {
-    return this.load<EPPItem>('epp_items', DEFAULT_EPP_ITEMS);
-  }
-
-  getEPPItemById(id: string): EPPItem | undefined {
-    return this.getEPPItems().find(item => item.id === id);
-  }
-
-  createEPPItem(itemData: Omit<EPPItem, 'id' | 'created_at'>): EPPItem {
-    const items = this.getEPPItems();
-    const newItem: EPPItem = {
-      ...itemData,
-      id: `epp-${generateUUID()}`,
-      created_at: new Date().toISOString()
-    };
-    items.push(newItem);
-    this.save('epp_items', items);
-    return newItem;
-  }
-
-  updateEPPItem(item: EPPItem): void {
-    const items = this.getEPPItems();
-    const index = items.findIndex(i => i.id === item.id);
-    if (index !== -1) {
-      items[index] = item;
-      this.save('epp_items', items);
+  async getEPPItems(): Promise<EPPItem[]> {
+    await this.seedIfEmpty();
+    const { data, error } = await supabase.from('epp_items').select('*').order('name');
+    if (error) {
+      console.error(error);
+      return [];
     }
+    return data || [];
   }
 
-  updateEPPItemStock(id: string, newStock: number): void {
-    const items = this.getEPPItems();
-    const item = items.find(i => i.id === id);
-    if (item) {
-      item.stock = newStock;
-      this.save('epp_items', items);
-    }
+  async getEPPItemById(id: string): Promise<EPPItem | undefined> {
+    const { data, error } = await supabase.from('epp_items').select('*').eq('id', id).single();
+    if (error) return undefined;
+    return data;
   }
 
-  addEPPItemStockBySku(sku: string, quantity: number): EPPItem | null {
-    const items = this.getEPPItems();
-    const item = items.find(i => i.sku.toLowerCase() === sku.trim().toLowerCase());
-    if (item) {
-      item.stock += quantity;
-      this.save('epp_items', items);
-      return item;
+  async createEPPItem(itemData: Omit<EPPItem, 'id' | 'created_at'>): Promise<EPPItem | null> {
+    const { data, error } = await supabase.from('epp_items').insert(itemData).select().single();
+    if (error) {
+      console.error(error);
+      return null;
     }
-    return null;
+    return data;
+  }
+
+  async updateEPPItem(item: EPPItem): Promise<void> {
+    const { error } = await supabase.from('epp_items').update(item).eq('id', item.id);
+    if (error) console.error(error);
+  }
+
+  async addEPPItemStockBySku(sku: string, quantity: number): Promise<EPPItem | null> {
+    const { data: item, error } = await supabase.from('epp_items').select('*').eq('sku', sku).single();
+    if (error || !item) return null;
+    const newStock = item.stock + quantity;
+    const { data: updatedItem, error: updateErr } = await supabase
+      .from('epp_items')
+      .update({ stock: newStock })
+      .eq('id', item.id)
+      .select()
+      .single();
+    if (updateErr) return null;
+    return updatedItem;
   }
 
   // --- WORKERS ---
-  getWorkers(): Worker[] {
-    return this.load<Worker>('workers', DEFAULT_WORKERS);
-  }
-
-  getWorkerById(id: string): Worker | undefined {
-    return this.getWorkers().find(w => w.id === id);
-  }
-
-  getWorkerByRut(rut: string): Worker | undefined {
-    const cleanRut = rut.replace(/[\.-]/g, '').trim().toLowerCase();
-    return this.getWorkers().find(w => {
-      const wCleanRut = w.rut.replace(/[\.-]/g, '').trim().toLowerCase();
-      return wCleanRut === cleanRut;
-    });
-  }
-
-  searchWorkers(query: string): Worker[] {
-    const cleanQuery = query.toLowerCase().trim().replace(/[\.-]/g, '');
-    if (!cleanQuery) return [];
-    
-    return this.getWorkers().filter(w => {
-      const fullName = `${w.first_name} ${w.last_name}`.toLowerCase();
-      const cleanRut = w.rut.replace(/[\.-]/g, '').trim().toLowerCase();
-      return fullName.includes(cleanQuery) || cleanRut.includes(cleanQuery);
-    });
-  }
-
-  createWorker(workerData: Omit<Worker, 'id' | 'created_at' | 'status'>): Worker {
-    const workers = this.getWorkers();
-    const newWorker: Worker = {
-      ...workerData,
-      id: `worker-${generateUUID()}`,
-      status: 'Activo',
-      created_at: new Date().toISOString()
-    };
-    workers.push(newWorker);
-    this.save('workers', workers);
-    return newWorker;
-  }
-
-  updateWorker(worker: Worker): void {
-    const workers = this.getWorkers();
-    const index = workers.findIndex(w => w.id === worker.id);
-    if (index !== -1) {
-      workers[index] = worker;
-      this.save('workers', workers);
+  async getWorkers(): Promise<Worker[]> {
+    await this.seedIfEmpty();
+    const { data, error } = await supabase.from('workers').select('*').order('last_name');
+    if (error) {
+      console.error(error);
+      return [];
     }
+    return data || [];
+  }
+
+  async getWorkerById(id: string): Promise<Worker | undefined> {
+    const { data, error } = await supabase.from('workers').select('*').eq('id', id).single();
+    if (error) return undefined;
+    return data;
+  }
+
+  async getWorkerByRut(rut: string): Promise<Worker | undefined> {
+    const cleanRut = rut.replace(/[\.-]/g, '').trim().toLowerCase();
+    const { data, error } = await supabase.from('workers').select('*');
+    if (error || !data) return undefined;
+    return data.find(w => w.rut.replace(/[\.-]/g, '').trim().toLowerCase() === cleanRut);
+  }
+
+  async createWorker(workerData: Omit<Worker, 'id' | 'created_at' | 'status'>): Promise<Worker | null> {
+    const { data, error } = await supabase.from('workers').insert({ ...workerData, status: 'Activo' }).select().single();
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    return data;
+  }
+
+  async updateWorker(worker: Worker): Promise<void> {
+    const { error } = await supabase.from('workers').update(worker).eq('id', worker.id);
+    if (error) console.error(error);
   }
 
   // --- SUPPLIERS ---
-  getSuppliers(): Supplier[] {
-    return this.load<Supplier>('suppliers', DEFAULT_SUPPLIERS);
-  }
-
-  getSupplierById(id: string): Supplier | undefined {
-    return this.getSuppliers().find(s => s.id === id);
-  }
-
-  createSupplier(supplierData: Omit<Supplier, 'id' | 'created_at'>): Supplier {
-    const suppliers = this.getSuppliers();
-    const newSupplier: Supplier = {
-      ...supplierData,
-      id: `sup-${generateUUID()}`,
-      created_at: new Date().toISOString()
-    };
-    suppliers.push(newSupplier);
-    this.save('suppliers', suppliers);
-    return newSupplier;
-  }
-
-  updateSupplier(supplier: Supplier): void {
-    const suppliers = this.getSuppliers();
-    const index = suppliers.findIndex(s => s.id === supplier.id);
-    if (index !== -1) {
-      suppliers[index] = supplier;
-      this.save('suppliers', suppliers);
+  async getSuppliers(): Promise<Supplier[]> {
+    await this.seedIfEmpty();
+    const { data, error } = await supabase.from('suppliers').select('*').order('name');
+    if (error) {
+      console.error(error);
+      return [];
     }
+    return data || [];
+  }
+
+  async createSupplier(supplierData: Omit<Supplier, 'id' | 'created_at'>): Promise<Supplier | null> {
+    const { data, error } = await supabase.from('suppliers').insert(supplierData).select().single();
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    return data;
+  }
+
+  async updateSupplier(supplier: Supplier): Promise<void> {
+    const { error } = await supabase.from('suppliers').update(supplier).eq('id', supplier.id);
+    if (error) console.error(error);
   }
 
   // --- ADMIN USERS ---
-  getAdmins(): AdminUser[] {
-    return this.load<AdminUser>('admins', DEFAULT_ADMINS);
-  }
-
-  createAdmin(adminData: Omit<AdminUser, 'id' | 'created_at'>): AdminUser {
-    const admins = this.getAdmins();
-    const newAdmin: AdminUser = {
-      ...adminData,
-      id: `admin-${generateUUID()}`,
-      created_at: new Date().toISOString()
-    };
-    admins.push(newAdmin);
-    this.save('admins', admins);
-    return newAdmin;
-  }
-
-  updateAdmin(admin: AdminUser): void {
-    const admins = this.getAdmins();
-    const index = admins.findIndex(a => a.id === admin.id);
-    if (index !== -1) {
-      admins[index] = admin;
-      this.save('admins', admins);
+  async getAdmins(): Promise<AdminUser[]> {
+    await this.seedIfEmpty();
+    const { data, error } = await supabase.from('admins').select('*').order('username');
+    if (error) {
+      console.error(error);
+      return [];
     }
+    return data || [];
   }
 
-  deleteAdmin(id: string): boolean {
-    const admins = this.getAdmins();
-    if (admins.length <= 1) return false; // Cannot delete last admin
-    const filtered = admins.filter(a => a.id !== id);
-    this.save('admins', filtered);
-    return true;
+  async createAdmin(adminData: Omit<AdminUser, 'id' | 'created_at'>): Promise<AdminUser | null> {
+    const { data, error } = await supabase.from('admins').insert(adminData).select().single();
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    return data;
   }
 
-  verifyAdminCredentials(username: string, password_hash: string): AdminUser | undefined {
-    return this.getAdmins().find(a => 
-      a.username.toLowerCase().trim() === username.toLowerCase().trim() &&
-      a.password_hash === password_hash
-    );
+  async updateAdmin(admin: AdminUser): Promise<void> {
+    const { error } = await supabase.from('admins').update(admin).eq('id', admin.id);
+    if (error) console.error(error);
+  }
+
+  async deleteAdmin(id: string): Promise<boolean> {
+    const { data: admins } = await supabase.from('admins').select('id');
+    if (admins && admins.length <= 1) return false;
+    const { error } = await supabase.from('admins').delete().eq('id', id);
+    return !error;
+  }
+
+  async verifyAdminCredentials(username: string, password_hash: string): Promise<AdminUser | undefined> {
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('username', username.trim())
+      .eq('password_hash', password_hash)
+      .single();
+    if (error || !data) return undefined;
+    return data;
   }
 
   // --- STOCK REPLENISHMENTS ---
-  getStockReplenishments(): StockReplenishment[] {
-    return this.load<StockReplenishment>('stock_replenishments', DEFAULT_STOCK_REPLENISHMENTS);
-  }
-
-  getStockReplenishmentsWithDetails(): StockReplenishmentWithDetails[] {
-    const reps = this.getStockReplenishments();
-    const items = this.getEPPItems();
-    const sups = this.getSuppliers();
-    
-    return reps.map(r => ({
-      ...r,
-      epp_item: items.find(i => i.id === r.epp_id),
-      supplier: sups.find(s => s.id === r.supplier_id)
-    }));
-  }
-
-  createStockReplenishment(replenishmentData: Omit<StockReplenishment, 'id' | 'created_at'>): StockReplenishment {
-    const replenishments = this.getStockReplenishments();
-    const newReplenishment: StockReplenishment = {
-      ...replenishmentData,
-      id: `rep-${generateUUID()}`,
-      created_at: new Date().toISOString()
-    };
-    replenishments.push(newReplenishment);
-    this.save('stock_replenishments', replenishments);
-
-    // Increase stock in catalog
-    const item = this.getEPPItemById(newReplenishment.epp_id);
-    if (item) {
-      this.updateEPPItemStock(item.id, item.stock + newReplenishment.quantity);
+  async getStockReplenishments(): Promise<StockReplenishment[]> {
+    await this.seedIfEmpty();
+    const { data, error } = await supabase.from('stock_replenishments').select('*');
+    if (error) {
+      console.error(error);
+      return [];
     }
+    return data || [];
+  }
 
-    return newReplenishment;
+  async getStockReplenishmentsWithDetails(): Promise<StockReplenishmentWithDetails[]> {
+    const { data, error } = await supabase
+      .from('stock_replenishments')
+      .select(`
+        *,
+        epp_item:epp_items(*),
+        supplier:suppliers(*)
+      `)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error(error);
+      return [];
+    }
+    return (data || []) as unknown as StockReplenishmentWithDetails[];
+  }
+
+  async createStockReplenishment(replenishmentData: Omit<StockReplenishment, 'id' | 'created_at'>): Promise<StockReplenishment | null> {
+    // Inserts the row. Trigger trg_on_stock_replenishment automatically increases the stock in database!
+    const { data, error } = await supabase.from('stock_replenishments').insert(replenishmentData).select().single();
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    return data;
   }
 
   // --- DELIVERIES ---
-  getDeliveries(): Delivery[] {
-    return this.load<Delivery>('deliveries', DEFAULT_DELIVERIES);
+  async getDeliveries(): Promise<Delivery[]> {
+    await this.seedIfEmpty();
+    const { data, error } = await supabase.from('deliveries').select('*');
+    if (error) {
+      console.error(error);
+      return [];
+    }
+    return data || [];
   }
 
-  getDeliveriesWithDetails(): DeliveryWithDetails[] {
-    const deliveries = this.getDeliveries();
-    const workers = this.getWorkers();
-    const eppItems = this.getEPPItems();
-
-    return deliveries.map(d => ({
-      ...d,
-      worker: workers.find(w => w.id === d.worker_id),
-      epp_item: eppItems.find(e => e.id === d.epp_id)
-    })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); // Newer first
+  async getDeliveriesWithDetails(): Promise<DeliveryWithDetails[]> {
+    const { data, error } = await supabase
+      .from('deliveries')
+      .select(`
+        *,
+        worker:workers(*),
+        epp_item:epp_items(*)
+      `)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error(error);
+      return [];
+    }
+    return (data || []) as unknown as DeliveryWithDetails[];
   }
 
-  getDeliveriesByWorkerId(workerId: string): DeliveryWithDetails[] {
-    return this.getDeliveriesWithDetails().filter(d => d.worker_id === workerId);
-  }
-
-  generateNextRequestNumber(): string {
-    const deliveries = this.getDeliveries();
-    const uniqueNums = Array.from(new Set(deliveries.map(d => d.request_number).filter(Boolean)));
+  async generateNextRequestNumber(): Promise<string> {
+    const { data, error } = await supabase.from('deliveries').select('request_number');
+    if (error || !data) return 'SOL-0001';
+    const uniqueNums = Array.from(new Set(data.map(d => d.request_number).filter(Boolean)));
     const nextNum = uniqueNums.length + 1;
     return `SOL-${nextNum.toString().padStart(4, '0')}`;
   }
 
-  createDelivery(deliveryData: Omit<Delivery, 'id' | 'created_at'>): Delivery {
-    const deliveries = this.getDeliveries();
+  async createDelivery(deliveryData: Omit<Delivery, 'id' | 'created_at'>): Promise<Delivery | null> {
+    const { data, error } = await supabase.from('deliveries').insert(deliveryData).select().single();
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    return data;
+  }
+
+  async approveDelivery(id: string): Promise<boolean> {
+    const { data: delivery, error: fetchErr } = await supabase.from('deliveries').select('*').eq('id', id).single();
+    if (fetchErr || !delivery) return false;
     
-    // Create new delivery
-    const newDelivery: Delivery = {
-      ...deliveryData,
-      id: `del-${generateUUID()}`,
-      created_at: new Date().toISOString()
-    };
-    
-    deliveries.push(newDelivery);
-    this.save('deliveries', deliveries);
+    // Check stock
+    const { data: epp, error: eppErr } = await supabase.from('epp_items').select('stock').eq('id', delivery.epp_id).single();
+    if (eppErr || !epp || epp.stock < delivery.quantity) return false;
 
-    // If status is 'Entregado' immediately, decrease EPP stock!
-    if (newDelivery.status === 'Entregado') {
-      const epp = this.getEPPItemById(newDelivery.epp_id);
-      if (epp) {
-        this.updateEPPItemStock(epp.id, Math.max(0, epp.stock - newDelivery.quantity));
-      }
-    }
+    // Update status. Trigger trg_on_delivery_approval will automatically reduce stock!
+    const { error: updateErr } = await supabase
+      .from('deliveries')
+      .update({
+        status: 'Entregado',
+        delivered_at: new Date().toISOString()
+      })
+      .eq('id', id);
 
-    return newDelivery;
+    return !updateErr;
   }
 
-  approveDelivery(id: string): boolean {
-    const deliveries = this.getDeliveries();
-    const index = deliveries.findIndex(d => d.id === id);
-    if (index !== -1) {
-      const delivery = deliveries[index];
-      if (delivery.status === 'Pendiente') {
-        // Decrease stock
-        const epp = this.getEPPItemById(delivery.epp_id);
-        if (epp && epp.stock >= delivery.quantity) {
-          delivery.status = 'Entregado';
-          delivery.delivered_at = new Date().toISOString();
-          
-          this.updateEPPItemStock(epp.id, epp.stock - delivery.quantity);
-          this.save('deliveries', deliveries);
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  rejectDelivery(id: string): boolean {
-    const deliveries = this.getDeliveries();
-    const index = deliveries.findIndex(d => d.id === id);
-    if (index !== -1) {
-      const delivery = deliveries[index];
-      if (delivery.status === 'Pendiente') {
-        delivery.status = 'Rechazado';
-        delivery.delivered_at = new Date().toISOString();
-        this.save('deliveries', deliveries);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  requestRecambio(workerId: string, eppId: string, quantity: number, notes: string): Delivery {
-    return this.createDelivery({
-      worker_id: workerId,
-      epp_id: eppId,
-      quantity,
-      status: 'Pendiente',
-      delivered_at: null,
-      notes: `SOLICITUD RECAMBIO: ${notes}`,
-      request_number: this.generateNextRequestNumber()
-    });
+  async rejectDelivery(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('deliveries')
+      .update({
+        status: 'Rechazado',
+        delivered_at: new Date().toISOString()
+      })
+      .eq('id', id);
+    return !error;
   }
 
   // --- UNIFIED HISTORY LOG ---
-  getHistoryLogs(): HistoryLog[] {
-    const deliveries = this.getDeliveriesWithDetails();
-    const replenishments = this.getStockReplenishmentsWithDetails();
+  async getHistoryLogs(): Promise<HistoryLog[]> {
+    const [deliveries, replenishments] = await Promise.all([
+      this.getDeliveriesWithDetails(),
+      this.getStockReplenishmentsWithDetails()
+    ]);
 
     const logs: HistoryLog[] = [];
 
@@ -664,7 +618,7 @@ class DBService {
           category: d.epp_item?.category || 'General',
           quantity: d.quantity,
           price: priceVal,
-          total_cost: 0, // Rejected means no financial flow/impact
+          total_cost: 0,
           details: d.worker ? `${d.worker.first_name} ${d.worker.last_name} (${d.worker.rut})` : 'N/A',
           notes: `${d.notes || ''} [Solicitud: ${d.request_number}]`.trim(),
           statusLabel: 'Rechazado'

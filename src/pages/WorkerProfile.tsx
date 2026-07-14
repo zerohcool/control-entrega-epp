@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { dbService } from '../services/dbService';
 
 export const WorkerProfile: React.FC = () => {
-  const { user, selectedWorkerId, navigate, deliveries } = useApp();
+  const { user, selectedWorkerId, navigate, deliveries, workers } = useApp();
   const [searchHistoryQuery, setSearchHistoryQuery] = useState('');
 
   // Fetch the current worker
-  const worker = dbService.getWorkerById(selectedWorkerId || '');
+  const worker = workers.find(w => w.id === selectedWorkerId);
   
   if (!worker) {
     return (
