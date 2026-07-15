@@ -290,57 +290,59 @@ export const EPPCatalog: React.FC = () => {
         </div>
 
         {/* Interactive Search Input List */}
-        <div className="relative w-full md:w-80">
-          <button
-            onClick={() => setIsWorkerDropdownOpen(!isWorkerDropdownOpen)}
-            className="w-full h-10 px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-left flex justify-between items-center text-on-surface hover:bg-surface-container-high transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-          >
-            <span className="truncate">{selectedWorker ? `${selectedWorker.first_name} ${selectedWorker.last_name}` : 'Buscar colaborador...'}</span>
-            <span className="material-symbols-outlined text-on-surface-variant">arrow_drop_down</span>
-          </button>
+        {user?.role === 'admin' && (
+          <div className="relative w-full md:w-80">
+            <button
+              onClick={() => setIsWorkerDropdownOpen(!isWorkerDropdownOpen)}
+              className="w-full h-10 px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-left flex justify-between items-center text-on-surface hover:bg-surface-container-high transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+            >
+              <span className="truncate">{selectedWorker ? `${selectedWorker.first_name} ${selectedWorker.last_name}` : 'Buscar colaborador...'}</span>
+              <span className="material-symbols-outlined text-on-surface-variant">arrow_drop_down</span>
+            </button>
 
-          {isWorkerDropdownOpen && (
-            <div className="absolute right-0 left-0 mt-1.5 bg-white border border-outline-variant rounded-xl shadow-xl z-30 p-3 flex flex-col gap-2 max-h-[300px]">
-              <div className="relative w-full shrink-0">
-                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-                <input
-                  type="text"
-                  placeholder="Escribe el nombre o RUT..."
-                  value={workerSearchQuery}
-                  onChange={(e) => setWorkerSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:border-primary text-left"
-                />
+            {isWorkerDropdownOpen && (
+              <div className="absolute right-0 left-0 mt-1.5 bg-white border border-outline-variant rounded-xl shadow-xl z-30 p-3 flex flex-col gap-2 max-h-[300px]">
+                <div className="relative w-full shrink-0">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                  <input
+                    type="text"
+                    placeholder="Escribe el nombre o RUT..."
+                    value={workerSearchQuery}
+                    onChange={(e) => setWorkerSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:border-primary text-left"
+                  />
+                </div>
+                <div className="overflow-y-auto flex-grow divide-y divide-outline-variant/30 mt-1">
+                  {filteredWorkersList.length === 0 ? (
+                    <div className="py-4 text-center text-xs text-on-surface-variant opacity-60">
+                      No se encontraron coincidencias.
+                    </div>
+                  ) : (
+                    filteredWorkersList.map(w => (
+                      <button
+                        key={w.id}
+                        onClick={() => {
+                          navigate('catalog', w.id);
+                          setIsWorkerDropdownOpen(false);
+                          setWorkerSearchQuery('');
+                        }}
+                        className={`w-full text-left p-2 hover:bg-surface-container-low text-xs transition-colors flex justify-between items-center ${
+                          selectedWorkerId === w.id ? 'bg-primary/5 text-primary font-bold' : 'text-on-surface'
+                        }`}
+                      >
+                        <div className="flex flex-col text-left">
+                          <span>{w.first_name} {w.last_name}</span>
+                          <span className="text-[10px] text-on-surface-variant font-mono-data">RUT: {w.rut}</span>
+                        </div>
+                        <span className="text-[10px] text-on-surface-variant uppercase font-semibold">{w.cargo}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-              <div className="overflow-y-auto flex-grow divide-y divide-outline-variant/30 mt-1">
-                {filteredWorkersList.length === 0 ? (
-                  <div className="py-4 text-center text-xs text-on-surface-variant opacity-60">
-                    No se encontraron coincidencias.
-                  </div>
-                ) : (
-                  filteredWorkersList.map(w => (
-                    <button
-                      key={w.id}
-                      onClick={() => {
-                        navigate('catalog', w.id);
-                        setIsWorkerDropdownOpen(false);
-                        setWorkerSearchQuery('');
-                      }}
-                      className={`w-full text-left p-2 hover:bg-surface-container-low text-xs transition-colors flex justify-between items-center ${
-                        selectedWorkerId === w.id ? 'bg-primary/5 text-primary font-bold' : 'text-on-surface'
-                      }`}
-                    >
-                      <div className="flex flex-col text-left">
-                        <span>{w.first_name} {w.last_name}</span>
-                        <span className="text-[10px] text-on-surface-variant font-mono-data">RUT: {w.rut}</span>
-                      </div>
-                      <span className="text-[10px] text-on-surface-variant uppercase font-semibold">{w.cargo}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Filter and Search Products */}

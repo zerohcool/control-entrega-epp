@@ -100,6 +100,7 @@ export const WorkerSearch: React.FC = () => {
     registerWorker, 
     registerSupplier, 
     updateWorker, 
+    deleteWorker,
     updateSupplier, 
     navigate,
     admins,
@@ -559,6 +560,16 @@ export const WorkerSearch: React.FC = () => {
                           >
                             <span className="material-symbols-outlined text-xs">analytics</span>
                             Ficha
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`¿Está seguro que desea eliminar al colaborador ${w.first_name} ${w.last_name}?`)) {
+                                deleteWorker(w.id);
+                              }
+                            }}
+                            className="px-2.5 py-1 text-xs text-red-600 font-bold border border-red-200 rounded hover:bg-red-50 transition-colors"
+                          >
+                            Eliminar
                           </button>
                         </div>
                       </td>

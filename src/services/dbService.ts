@@ -409,6 +409,11 @@ class DBService {
     if (error) console.error(error);
   }
 
+  async deleteWorker(id: string): Promise<boolean> {
+    const { error } = await supabase.from('workers').delete().eq('id', id);
+    return !error;
+  }
+
   // --- SUPPLIERS ---
   async getSuppliers(): Promise<Supplier[]> {
     await this.seedIfEmpty();

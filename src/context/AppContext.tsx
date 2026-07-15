@@ -51,6 +51,7 @@ interface AppContextType {
   registerSupplier: (supplierData: Omit<Supplier, 'id' | 'created_at'>) => void;
   registerStockReplenishment: (replenishmentData: Omit<StockReplenishment, 'id' | 'created_at'>) => void;
   updateWorker: (worker: Worker) => void;
+  deleteWorker: (id: string) => void;
   updateSupplier: (supplier: Supplier) => void;
   updateEPPItem: (item: EPPItem) => void;
   registerEPPItem: (itemData: Omit<EPPItem, 'id' | 'created_at'>) => void;
@@ -335,6 +336,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAlert(`Colaborador ${worker.first_name} ${worker.last_name} actualizado con éxito`, 'success');
   };
 
+  const deleteWorker = async (id: string) => {
+    // Check if worker has any deliveries
+    const workerDeliveries = deliveries.filter(d => d.worker_id === id);
+    if (workerDeliveries.length > 0) {
+      setAlert('No se puede eliminar el colaborador porque registra historial de entregas.', 'error');
+      return;
+    }
+
+    const success = await dbService.deleteWorker(id);
+    if (success) {
+      await refreshData();
+      setAlert('Colaborador eliminado con éxito', 'success');
+    } else {
+      setAlert('Error al eliminar colaborador', 'error');
+    }
+  };
+
   const updateSupplier = async (supplier: Supplier) => {
     await dbService.updateSupplier(supplier);
     await refreshData();
@@ -415,6 +433,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registerSupplier,
       registerStockReplenishment,
       updateWorker,
+      deleteWorker,
       updateSupplier,
       updateEPPItem,
       registerEPPItem,
