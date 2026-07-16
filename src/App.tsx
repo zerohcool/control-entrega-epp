@@ -12,6 +12,10 @@ import { Reports } from './pages/Reports';
 const AppContent: React.FC = () => {
   const { activeView, alert, user, isSubmittingRequest, submissionProgress } = useApp();
 
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeView]);
+
   const renderActiveView = () => {
     switch (activeView) {
       case 'login':
