@@ -42,6 +42,29 @@ const convertToWebP = (file: File): Promise<string> => {
 
 export const AdminDashboard: React.FC = () => {
   const { deliveries, eppItems, approveRequest, rejectRequest, updateEPPItem, navigate } = useApp();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleApprove = async (id: string) => {
+    setIsProcessing(true);
+    try {
+      await approveRequest(id);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    setIsProcessing(true);
+    try {
+      await rejectRequest(id);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   
   // Search product state (Buscador de existencias)
   const [productSearchInput, setProductSearchInput] = useState('');
@@ -179,7 +202,13 @@ export const AdminDashboard: React.FC = () => {
         
         {/* Left Column: Pending Authorizations (2 spans) */}
         <div className="lg:col-span-2 flex flex-col gap-6 w-full">
-          <div className="bg-white border border-outline-variant rounded-xl p-6 shadow-sm min-h-[350px] flex flex-col">
+          <div className="bg-white border border-outline-variant rounded-xl p-6 shadow-sm min-h-[350px] flex flex-col relative">
+            {isProcessing && (
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex flex-col items-center justify-center z-20 rounded-xl">
+                <div className="loader"></div>
+                <span className="text-xs font-bold text-primary mt-3 uppercase tracking-wider">Procesando solicitud...</span>
+              </div>
+            )}
             <h2 className="font-headline-sm text-headline-sm text-primary font-bold mb-4 flex items-center gap-2 border-b border-outline-variant/30 pb-3 shrink-0">
               <span className="material-symbols-outlined text-[22px]">pending_actions</span>
               Autorizaciones Pendientes ({pendingRequests.length})
@@ -249,7 +278,7 @@ export const AdminDashboard: React.FC = () => {
 
                         <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
                           <button
-                            onClick={() => rejectRequest(req.id)}
+                            onClick={() => handleReject(req.id)}
                             className="flex-1 sm:flex-initial px-3.5 py-2 border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1"
                           >
                             <span className="material-symbols-outlined text-[16px]">cancel</span>
@@ -262,7 +291,7 @@ export const AdminDashboard: React.FC = () => {
                                   return;
                                 }
                               }
-                              approveRequest(req.id);
+                              handleApprove(req.id);
                             }}
                             className="flex-1 sm:flex-initial px-3.5 py-2 bg-primary text-on-primary hover:bg-primary-container text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1"
                           >
