@@ -218,7 +218,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSubmissionProgress(10);
 
     const startTime = Date.now();
-    const duration = 3000; // 3 seconds
+    const duration = 1500; // 1.5 seconds
 
     const interval = setInterval(async () => {
       const elapsed = Date.now() - startTime;
