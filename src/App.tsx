@@ -98,17 +98,11 @@ const AppContent: React.FC = () => {
       {/* Transaction Submission Loader Overlay */}
       {isSubmittingRequest && (
         <div id="loader_overlay">
-          <div id="loader_container">
-            <div id="bar_container">
-              <div id="progress_bar" style={{ width: `${submissionProgress}%` }}>
-                <div id="progress_percentage">
-                  {submissionProgress}%
-                </div>
-              </div>
-            </div>
+          <div id="loader_container" className="flex flex-col items-center justify-center gap-4">
+            <div className="loader"></div>
             <div id="text_container">
               Enviando Solicitud
-              <span>Por favor espere...</span>
+              <span>Por favor espere ({submissionProgress}%)...</span>
             </div>
           </div>
         </div>
