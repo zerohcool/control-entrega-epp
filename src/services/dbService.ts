@@ -292,9 +292,11 @@ const DEFAULT_ADMINS: AdminUser[] = [
 
 class DBService {
   private seedingPromise: Promise<void> | null = null;
+  private hasCheckedSeed = false;
 
   // Check and seed databases dynamically on startup if they have 0 records
   private async seedIfEmpty(): Promise<void> {
+    if (this.hasCheckedSeed) return;
     if (this.seedingPromise) {
       return this.seedingPromise;
     }
@@ -318,6 +320,7 @@ class DBService {
           await supabase.from('deliveries').insert(DEFAULT_DELIVERIES);
           console.log('Sembrado completado con éxito.');
         }
+        this.hasCheckedSeed = true;
       } catch (err) {
         console.error('Fallo crítico al sembrar datos en Supabase:', err);
       }
@@ -600,7 +603,11 @@ class DBService {
       this.getDeliveriesWithDetails(),
       this.getStockReplenishmentsWithDetails()
     ]);
+    return this.calculateHistoryLogsLocal(deliveries, replenishments);
+  }
 
+  // --- LOCAL UNIFIED HISTORY LOG CALCULATOR ---
+  calculateHistoryLogsLocal(deliveries: DeliveryWithDetails[], replenishments: StockReplenishmentWithDetails[]): HistoryLog[] {
     const logs: HistoryLog[] = [];
 
     // Map deliveries

@@ -88,14 +88,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Load initial data from Supabase
   const refreshData = async () => {
     try {
-      const [workersList, eppItemsList, deliveriesList, suppliersList, historyLogsList, adminsList] = await Promise.all([
+      const [workersList, eppItemsList, deliveriesList, suppliersList, replenishmentsList, adminsList] = await Promise.all([
         dbService.getWorkers(),
         dbService.getEPPItems(),
         dbService.getDeliveriesWithDetails(),
         dbService.getSuppliers(),
-        dbService.getHistoryLogs(),
+        dbService.getStockReplenishmentsWithDetails(),
         dbService.getAdmins()
       ]);
+
+      // Calculate history logs in memory on the client side to avoid duplicate network queries
+      const historyLogsList = dbService.calculateHistoryLogsLocal(deliveriesList, replenishmentsList);
+
       setWorkers(workersList);
       setEppItems(eppItemsList);
       setDeliveries(deliveriesList);
