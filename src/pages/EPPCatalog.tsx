@@ -347,42 +347,30 @@ export const EPPCatalog: React.FC = () => {
       </div>
 
       {/* Filter and Search Products */}
-      <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+      <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col gap-4">
         
-        {/* Search Field */}
-        <div className="relative w-full lg:w-96 h-10">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por SKU, nombre de EPP o descripción..."
-            className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-lg text-sm transition-colors h-10 text-left"
-          />
+        {/* Row 1: Categories selector (Scroll horizontal if needed) */}
+        <div className="flex gap-2 overflow-x-auto pb-1 max-w-full no-scrollbar">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap cursor-pointer ${
+                selectedCategory === cat
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-white text-on-surface border-outline-variant hover:bg-surface-container-low'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Categories Horizontal Selector */}
-          <div className="flex gap-2 overflow-x-auto pb-1 max-w-full">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-primary text-on-primary border-primary'
-                    : 'bg-white text-on-surface border-outline-variant hover:bg-surface-container-low'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* View Mode Toggle Switch */}
-          <div className="flex border border-outline-variant rounded-lg p-0.5 bg-surface-container-low shrink-0 h-10 items-center">
+        {/* Row 2: Toggle Switch (left/right) + Search Input (occupying remaining space) */}
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between w-full">
+          
+          {/* View Mode Toggle Switch (takes only its natural width) */}
+          <div className="flex border border-outline-variant rounded-lg p-0.5 bg-surface-container-low shrink-0 h-10 items-center w-fit">
             <button
               onClick={() => setViewMode('grid')}
               className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
@@ -408,6 +396,21 @@ export const EPPCatalog: React.FC = () => {
               <span className="hidden sm:inline">Lista</span>
             </button>
           </div>
+
+          {/* Search Field (flex-grow, occupying remaining space) */}
+          <div className="relative flex-grow h-10">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por SKU, nombre de EPP o descripción..."
+              className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none rounded-lg text-sm transition-colors h-10 text-left"
+            />
+          </div>
+
         </div>
       </div>
 
