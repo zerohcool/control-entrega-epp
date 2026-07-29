@@ -61,6 +61,7 @@ interface AppContextType {
   registerAdmin: (adminData: Omit<AdminUser, 'id' | 'created_at'>) => void;
   updateAdmin: (admin: AdminUser) => void;
   deleteAdmin: (id: string) => void;
+  deleteHistoryRecord: (id: string, type: 'Entrega' | 'Rechazo' | 'Ingreso') => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -405,6 +406,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteHistoryRecord = async (id: string, type: 'Entrega' | 'Rechazo' | 'Ingreso'): Promise<boolean> => {
+    let success = false;
+    if (type === 'Entrega' || type === 'Rechazo') {
+      success = await dbService.deleteDelivery(id);
+    } else if (type === 'Ingreso') {
+      success = await dbService.deleteStockReplenishment(id);
+    }
+    
+    if (success) {
+      await refreshData();
+      setAlert('Registro del historial eliminado con éxito', 'success');
+    } else {
+      setAlert('Error al eliminar el registro del historial', 'error');
+    }
+    return success;
+  };
+
   return (
     <AppContext.Provider value={{
       user,
@@ -446,7 +464,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       admins,
       registerAdmin,
       updateAdmin,
-      deleteAdmin
+      deleteAdmin,
+      deleteHistoryRecord
     }}>
       {children}
     </AppContext.Provider>

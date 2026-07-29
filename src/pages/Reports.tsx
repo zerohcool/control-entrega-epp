@@ -2,7 +2,25 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const Reports: React.FC = () => {
-  const { historyLogs } = useApp();
+  const { historyLogs, user, deleteHistoryRecord } = useApp();
+
+  const handleDeleteLog = async (id: string, type: 'Entrega' | 'Rechazo' | 'Ingreso') => {
+    if (!confirm('¿Está seguro de que desea eliminar este registro del historial de movimientos? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    
+    const password = prompt('Para continuar, ingrese la contraseña de administrador para confirmar la eliminación:');
+    if (password === null) {
+      return; // Cancelado
+    }
+    
+    if (password !== 'EnaexAdmin27') {
+      alert('Contraseña incorrecta. No se ha eliminado el registro.');
+      return;
+    }
+
+    await deleteHistoryRecord(id, type);
+  };
   
   // Tabs: 'dashboard' | 'logs'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'logs'>('dashboard');
@@ -536,12 +554,15 @@ export const Reports: React.FC = () => {
                     <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-right">Val. Total</th>
                     <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">Colaborador / Entidad</th>
                     <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">Notas</th>
+                    {user?.role === 'admin' && (
+                      <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-center">Acciones</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant/30">
                   {filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-on-surface-variant opacity-60">
+                      <td colSpan={user?.role === 'admin' ? 9 : 8} className="py-8 text-center text-on-surface-variant opacity-60">
                         No hay movimientos registrados que coincidan con los filtros seleccionados.
                       </td>
                     </tr>
@@ -577,6 +598,17 @@ export const Reports: React.FC = () => {
                           <td className="px-4 py-2 text-xs text-on-surface-variant leading-normal max-w-xs truncate" title={log.notes}>
                             {log.notes || 'Sin observaciones'}
                           </td>
+                          {user?.role === 'admin' && (
+                            <td className="px-4 py-2 text-center">
+                              <button
+                                onClick={() => handleDeleteLog(log.id, log.type)}
+                                className="p-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer mx-auto shadow-sm"
+                                title="Eliminar Registro"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })

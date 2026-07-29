@@ -597,6 +597,22 @@ class DBService {
     return !error;
   }
 
+  async deleteDelivery(id: string): Promise<boolean> {
+    const { error } = await supabase.from('deliveries').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting delivery:', error);
+    }
+    return !error;
+  }
+
+  async deleteStockReplenishment(id: string): Promise<boolean> {
+    const { error } = await supabase.from('stock_replenishments').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting stock replenishment:', error);
+    }
+    return !error;
+  }
+
   // --- UNIFIED HISTORY LOG ---
   async getHistoryLogs(): Promise<HistoryLog[]> {
     const [deliveries, replenishments] = await Promise.all([
