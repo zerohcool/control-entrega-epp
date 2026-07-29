@@ -353,6 +353,20 @@ export const NavBar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Floating Mobile Cart Button */}
+      {activeView !== 'login' && totalCartItems > 0 && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="md:hidden fixed bottom-6 right-6 bg-[#f97316] text-white p-4 rounded-full shadow-lg z-40 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          aria-label="Ver carrito"
+        >
+          <span className="material-symbols-outlined text-[24px]">shopping_cart</span>
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+            {totalCartItems}
+          </span>
+        </button>
+      )}
     </>
   );
 };

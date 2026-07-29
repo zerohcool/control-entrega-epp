@@ -161,8 +161,8 @@ export const WorkerProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Table Container */}
-            <div className="overflow-x-auto">
+            {/* Table Container - Desktop/Tablet */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>
                   <tr className="border-b border-outline-variant bg-surface-container-low/50">
@@ -213,6 +213,49 @@ export const WorkerProfile: React.FC = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Card List - Mobile only */}
+            <div className="sm:hidden flex flex-col gap-3">
+              {filteredDeliveries.length === 0 ? (
+                <div className="py-8 text-center text-on-surface-variant opacity-60 text-sm">
+                  No se encontraron registros de entrega.
+                </div>
+              ) : (
+                filteredDeliveries.map((d) => {
+                  const displayDate = d.delivered_at
+                    ? new Date(d.delivered_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : new Date(d.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                  let statusBadge = '';
+                  if (d.status === 'Entregado') {
+                    statusBadge = 'bg-[#dcfce7] text-[#166534] border border-[#bbf7d0]';
+                  } else if (d.status === 'Pendiente') {
+                    statusBadge = 'bg-error-container text-on-error-container border border-error/20';
+                  } else if (d.status === 'Rechazado') {
+                    statusBadge = 'bg-red-50 text-[#b91c1c] border border-red-100';
+                  }
+
+                  return (
+                    <div key={d.id} className="bg-surface-container-low border border-outline-variant/50 rounded-lg p-3 text-left flex flex-col gap-2">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-mono-data text-[10px] text-on-surface-variant">{displayDate}</span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${statusBadge}`}>
+                          {d.status}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-on-surface text-sm">{d.epp_item?.name || 'EPP Desconocido'}</p>
+                        <p className="text-[10px] text-on-surface-variant font-mono-data mt-0.5">SKU: {d.epp_item?.sku}</p>
+                      </div>
+                      <div className="flex justify-between items-center border-t border-outline-variant/20 pt-2 mt-1">
+                        <span className="text-xs text-on-surface-variant">Cantidad: <strong className="font-mono-data text-on-surface text-sm">{d.quantity}</strong></span>
+                        {d.notes && <span className="text-[10px] text-on-surface-variant truncate max-w-[150px]" title={d.notes}>Nota: {d.notes}</span>}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

@@ -576,160 +576,291 @@ export const EPPCatalog: React.FC = () => {
           )}
         </div>
       ) : (
-        /* Products List (Table layout) */
-        <div className="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-surface-container-low border-b border-outline-variant">
-                <tr>
-                  <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">Imagen</th>
-                  <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">SKU</th>
-                  <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">Producto</th>
-                  <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold hidden md:table-cell">Descripción</th>
-                  <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-center">Stock</th>
-                  <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-right">Precio Unitario</th>
-                  <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-right">Solicitud / Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant/30">
-                {filteredItems.length === 0 ? (
+        <div className="w-full">
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-surface-container-low border-b border-outline-variant">
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-on-surface-variant opacity-60">
-                      No se encontraron productos en esta categoría.
-                    </td>
+                    <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">Imagen</th>
+                    <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">SKU</th>
+                    <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold">Producto</th>
+                    <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold hidden md:table-cell">Descripción</th>
+                    <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-center">Stock</th>
+                    <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-right">Precio Unitario</th>
+                    <th className="px-4 py-3.5 font-label-md text-label-md text-on-surface-variant uppercase text-xs font-semibold text-right">Solicitud / Acciones</th>
                   </tr>
-                ) : (
-                  filteredItems.map((item) => {
-                    const currentQty = quantities[item.id] || 1;
-                    const isOutOfStock = item.stock <= 0;
-                    const isLowStock = item.stock <= item.min_stock;
-                    
-                    return (
-                      <tr key={item.id} className="hover:bg-surface-container-low/10 transition-colors h-[72px] even:bg-surface-container-low/5">
-                        {/* Thumbnail Image */}
-                        <td className="px-4 py-2">
-                          <div className="w-12 h-12 bg-surface-container-low rounded border border-outline-variant/30 flex items-center justify-center p-1">
-                            {item.image_url && !failedImages[item.id] ? (
-                              <img
-                                src={item.image_url}
-                                alt={item.name}
-                                onError={() => setFailedImages(prev => ({ ...prev, [item.id]: true }))}
-                                className="max-h-full max-w-full object-contain mix-blend-multiply"
-                              />
+                </thead>
+                <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant/30">
+                  {filteredItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-on-surface-variant opacity-60">
+                        No se encontraron productos en esta categoría.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredItems.map((item) => {
+                      const currentQty = quantities[item.id] || 1;
+                      const isOutOfStock = item.stock <= 0;
+                      const isLowStock = item.stock <= item.min_stock;
+                      
+                      return (
+                        <tr key={item.id} className="hover:bg-surface-container-low/10 transition-colors h-[72px] even:bg-surface-container-low/5">
+                          {/* Thumbnail Image */}
+                          <td className="px-4 py-2">
+                            <div className="w-12 h-12 bg-surface-container-low rounded border border-outline-variant/30 flex items-center justify-center p-1">
+                              {item.image_url && !failedImages[item.id] ? (
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  onError={() => setFailedImages(prev => ({ ...prev, [item.id]: true }))}
+                                  className="max-h-full max-w-full object-contain mix-blend-multiply"
+                                />
+                              ) : (
+                                <span className="material-symbols-outlined text-primary/60 text-xl">{getCategoryIcon(item.category)}</span>
+                              )}
+                            </div>
+                          </td>
+                          
+                          {/* SKU */}
+                          <td className="px-4 py-2">
+                            <span className="font-mono-data text-mono-data text-on-surface-variant text-xs bg-surface-container px-1.5 py-0.5 rounded">
+                              {item.sku}
+                            </span>
+                          </td>
+                          
+                          {/* Product Name & Category */}
+                          <td className="px-4 py-2 text-left">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-on-surface text-sm flex items-center gap-1.5">
+                                {item.name}
+                                {user?.role === 'admin' && (
+                                  <button
+                                    onClick={() => openEditModal(item)}
+                                    className="text-primary hover:text-primary-container p-0.5 cursor-pointer"
+                                    title="Editar Producto"
+                                  >
+                                    <span className="material-symbols-outlined text-[14px]">edit</span>
+                                  </button>
+                                )}
+                              </span>
+                              <span className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mt-0.5">{item.category}</span>
+                            </div>
+                          </td>
+                          
+                          {/* Description (Hidden on mobile) */}
+                          <td className="px-4 py-2 text-left text-xs text-on-surface-variant hidden md:table-cell max-w-xs truncate" title={item.description}>
+                            {item.description}
+                          </td>
+                          
+                          {/* Stock Badge */}
+                          <td className="px-4 py-2 text-center">
+                            {isOutOfStock ? (
+                              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-50 text-red-700 border border-red-200">
+                                Sin Stock
+                              </span>
+                            ) : isLowStock ? (
+                              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-50 text-[#b45309] border border-amber-200">
+                                Crítico ({item.stock})
+                              </span>
                             ) : (
-                              <span className="material-symbols-outlined text-primary/60 text-xl">{getCategoryIcon(item.category)}</span>
+                              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green-50 text-[#166534] border border-green-200">
+                                Stock ({item.stock})
+                              </span>
                             )}
-                          </div>
-                        </td>
-                        
-                        {/* SKU */}
-                        <td className="px-4 py-2">
-                          <span className="font-mono-data text-mono-data text-on-surface-variant text-xs bg-surface-container px-1.5 py-0.5 rounded">
-                            {item.sku}
-                          </span>
-                        </td>
-                        
-                        {/* Product Name & Category */}
-                        <td className="px-4 py-2 text-left">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-on-surface text-sm flex items-center gap-1.5">
-                              {item.name}
-                              {user?.role === 'admin' && (
+                          </td>
+                          
+                          {/* Price */}
+                          <td className="px-4 py-2 text-right font-bold text-sm">
+                            ${(item.price || 0).toLocaleString('es-CL')}
+                          </td>
+                          
+                          {/* Request Inputs & Add Button */}
+                          <td className="px-4 py-2 text-right">
+                            <div className="flex items-center justify-end gap-2.5">
+                              {!isOutOfStock ? (
+                                <>
+                                  {/* Quantity selector */}
+                                  <div className="flex items-center border border-outline-variant rounded bg-surface h-[32px] scale-90 origin-right">
+                                    <button
+                                      onClick={() => handleQuantityChange(item.id, currentQty - 1, item.stock)}
+                                      className="px-2 py-1 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
+                                    >
+                                      <span className="material-symbols-outlined text-xs">remove</span>
+                                    </button>
+                                    <input
+                                      type="number"
+                                      value={currentQty}
+                                      min="1"
+                                      max={item.stock}
+                                      onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1, item.stock)}
+                                      className="w-8 text-center bg-transparent border-none text-on-surface font-mono-data text-mono-data p-0 h-full text-xs outline-none"
+                                    />
+                                    <button
+                                      onClick={() => handleQuantityChange(item.id, currentQty + 1, item.stock)}
+                                      className="px-2 py-1 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
+                                    >
+                                      <span className="material-symbols-outlined text-xs">add</span>
+                                    </button>
+                                  </div>
+                                  
+                                  {/* Add button */}
+                                  <button
+                                    onClick={() => handleAddToCart(item)}
+                                    className="bg-[#f97316] hover:bg-[#ea580c] text-white font-label-md text-label-md py-1.5 px-3 rounded transition-colors flex items-center gap-1.5 h-[32px] font-semibold text-xs cursor-pointer shadow-sm"
+                                  >
+                                    <span className="material-symbols-outlined text-[14px]">add_shopping_cart</span>
+                                    Agregar
+                                  </button>
+                                </>
+                              ) : (
                                 <button
-                                  onClick={() => openEditModal(item)}
-                                  className="text-primary hover:text-primary-container p-0.5"
-                                  title="Editar Producto"
+                                  disabled
+                                  className="bg-surface-container-high border border-outline-variant text-outline font-label-md text-label-md py-1.5 px-3 rounded cursor-not-allowed flex items-center gap-1.5 h-[32px] font-semibold text-xs"
                                 >
-                                  <span className="material-symbols-outlined text-[14px]">edit</span>
+                                  <span className="material-symbols-outlined text-[14px]">shopping_cart</span>
+                                  Agotado
                                 </button>
                               )}
-                            </span>
-                            <span className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mt-0.5">{item.category}</span>
-                          </div>
-                        </td>
-                        
-                        {/* Description (Hidden on mobile) */}
-                        <td className="px-4 py-2 text-left text-xs text-on-surface-variant hidden md:table-cell max-w-xs truncate" title={item.description}>
-                          {item.description}
-                        </td>
-                        
-                        {/* Stock Badge */}
-                        <td className="px-4 py-2 text-center">
-                          {isOutOfStock ? (
-                            <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-50 text-red-700 border border-red-200">
-                              Sin Stock
-                            </span>
-                          ) : isLowStock ? (
-                            <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-50 text-[#b45309] border border-amber-200">
-                              Crítico ({item.stock})
-                            </span>
-                          ) : (
-                            <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green-50 text-[#166534] border border-green-200">
-                              Stock ({item.stock})
-                            </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card-List View */}
+          <div className="md:hidden flex flex-col gap-3">
+            {filteredItems.length === 0 ? (
+              <div className="bg-white border border-outline-variant rounded-xl p-8 text-center text-on-surface-variant opacity-60">
+                <span className="material-symbols-outlined text-4xl mb-3 block">sentiment_dissatisfied</span>
+                No se encontraron productos en esta categoría.
+              </div>
+            ) : (
+              filteredItems.map((item) => {
+                const currentQty = quantities[item.id] || 1;
+                const isOutOfStock = item.stock <= 0;
+                const isLowStock = item.stock <= item.min_stock;
+                
+                return (
+                  <div key={item.id} className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                    <div className="flex gap-3">
+                      {/* Thumbnail Image */}
+                      <div className="w-16 h-16 bg-surface-container-low rounded border border-outline-variant/30 flex items-center justify-center p-1 shrink-0">
+                        {item.image_url && !failedImages[item.id] ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            onError={() => setFailedImages(prev => ({ ...prev, [item.id]: true }))}
+                            className="max-h-full max-w-full object-contain mix-blend-multiply"
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined text-primary/60 text-2xl">{getCategoryIcon(item.category)}</span>
+                        )}
+                      </div>
+                      
+                      {/* Product Info */}
+                      <div className="flex-grow min-w-0 text-left">
+                        <div className="flex justify-between items-start gap-1">
+                          <span className="font-bold text-on-surface text-sm truncate block">{item.name}</span>
+                          {user?.role === 'admin' && (
+                            <button
+                              onClick={() => openEditModal(item)}
+                              className="text-primary p-0.5 shrink-0 cursor-pointer"
+                              title="Editar Producto"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
+                            </button>
                           )}
-                        </td>
-                        
-                        {/* Price */}
-                        <td className="px-4 py-2 text-right font-bold text-sm">
-                          ${(item.price || 0).toLocaleString('es-CL')}
-                        </td>
-                        
-                        {/* Request Inputs & Add Button */}
-                        <td className="px-4 py-2 text-right">
-                          <div className="flex items-center justify-end gap-2.5">
-                            {!isOutOfStock ? (
-                              <>
-                                {/* Quantity selector */}
-                                <div className="flex items-center border border-outline-variant rounded bg-surface h-[32px] scale-90 origin-right">
-                                  <button
-                                    onClick={() => handleQuantityChange(item.id, currentQty - 1, item.stock)}
-                                    className="px-2 py-1 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
-                                  >
-                                    <span className="material-symbols-outlined text-xs">remove</span>
-                                  </button>
-                                  <input
-                                    type="number"
-                                    value={currentQty}
-                                    min="1"
-                                    max={item.stock}
-                                    onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1, item.stock)}
-                                    className="w-8 text-center bg-transparent border-none text-on-surface font-mono-data text-mono-data p-0 h-full text-xs outline-none"
-                                  />
-                                  <button
-                                    onClick={() => handleQuantityChange(item.id, currentQty + 1, item.stock)}
-                                    className="px-2 py-1 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
-                                  >
-                                    <span className="material-symbols-outlined text-xs">add</span>
-                                  </button>
-                                </div>
-                                
-                                {/* Add button */}
-                                <button
-                                  onClick={() => handleAddToCart(item)}
-                                  className="bg-[#f97316] hover:bg-[#ea580c] text-white font-label-md text-label-md py-1.5 px-3 rounded transition-colors flex items-center gap-1.5 h-[32px] font-semibold text-xs cursor-pointer shadow-sm"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">add_shopping_cart</span>
-                                  Agregar
-                                </button>
-                              </>
-                            ) : (
+                        </div>
+                        <span className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider block mt-0.5">{item.category}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="font-mono-data text-[10px] text-on-surface-variant bg-surface-container px-1 py-0.5 rounded">
+                            {item.sku}
+                          </span>
+                          <span className="text-xs font-black text-primary">
+                            ${(item.price || 0).toLocaleString('es-CL')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Stock Status and Actions Row */}
+                    <div className="flex items-center justify-between border-t border-outline-variant/30 pt-3 mt-1">
+                      {/* Stock Badge */}
+                      <div>
+                        {isOutOfStock ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-50 text-red-700 border border-red-200">
+                            Agotado
+                          </span>
+                        ) : isLowStock ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-50 text-[#b45309] border border-amber-200">
+                            Crítico ({item.stock})
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green-50 text-[#166534] border border-green-200">
+                            Stock ({item.stock})
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Add controls */}
+                      <div className="flex items-center gap-2">
+                        {!isOutOfStock ? (
+                          <>
+                            {/* Quantity selector */}
+                            <div className="flex items-center border border-outline-variant rounded bg-surface h-[32px] scale-90">
                               <button
-                                disabled
-                                className="bg-surface-container-high border border-outline-variant text-outline font-label-md text-label-md py-1.5 px-3 rounded cursor-not-allowed flex items-center gap-1.5 h-[32px] font-semibold text-xs"
+                                onClick={() => handleQuantityChange(item.id, currentQty - 1, item.stock)}
+                                className="px-2 py-1 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
                               >
-                                <span className="material-symbols-outlined text-[14px]">shopping_cart</span>
-                                Agotado
+                                <span className="material-symbols-outlined text-xs">remove</span>
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                              <input
+                                type="number"
+                                value={currentQty}
+                                min="1"
+                                max={item.stock}
+                                onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1, item.stock)}
+                                className="w-8 text-center bg-transparent border-none text-on-surface font-mono-data text-xs outline-none"
+                              />
+                              <button
+                                onClick={() => handleQuantityChange(item.id, currentQty + 1, item.stock)}
+                                className="px-2 py-1 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
+                              >
+                                <span className="material-symbols-outlined text-xs">add</span>
+                              </button>
+                            </div>
+                            
+                            {/* Add button */}
+                            <button
+                              onClick={() => handleAddToCart(item)}
+                              className="bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold py-1.5 px-3 rounded text-xs transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">add_shopping_cart</span>
+                              Agregar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            disabled
+                            className="bg-surface-container-high border border-outline-variant text-outline py-1.5 px-3 rounded cursor-not-allowed flex items-center gap-1 text-xs"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">shopping_cart</span>
+                            Agotado
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
