@@ -61,7 +61,9 @@ export const EPPCatalog: React.FC = () => {
   
   // Image loading fail fallback states
   const [failedImages, setFailedImages] = useState<{ [id: string]: boolean }>({});
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    return (typeof window !== 'undefined' && window.innerWidth <= 768) ? 'list' : 'grid';
+  });
 
   // Worker dropdown and search state
   const [workerSearchQuery, setWorkerSearchQuery] = useState('');
