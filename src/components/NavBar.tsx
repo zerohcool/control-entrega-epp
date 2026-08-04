@@ -55,11 +55,10 @@ export const NavBar: React.FC = () => {
       clientY = e.clientY;
     }
     
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
+    // Draw directly using CSS coordinates relative to the bounding box. 
+    // The ctx.scale(2, 2) will scale them automatically to double resolution.
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -85,11 +84,8 @@ export const NavBar: React.FC = () => {
       clientY = e.clientY;
     }
     
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
     ctx.lineTo(x, y);
     ctx.stroke();
