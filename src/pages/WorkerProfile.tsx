@@ -257,6 +257,14 @@ export const WorkerProfile: React.FC = () => {
                 })
               )}
             </div>
+
+            {/* Legal Disclaimer Block */}
+            <div className="mt-6 pt-4 border-t border-outline-variant/30 text-xs text-on-surface-variant leading-relaxed">
+              <p className="font-bold text-primary mb-1">Artículo 53 DS N° 594</p>
+              <p className="italic">
+                "El empleador deberá proporcionar a sus trabajadores, libres de costo, los elementos de protección personal adecuados al riesgo a cubrir y el adiestramiento necesario para su correcto empleo, debiendo, además, mantenerlos en perfecto estado de funcionamiento. Por su parte, el trabajador deberá usarlos en forma permanente mientras se encuentre expuesto al riesgo."
+              </p>
+            </div>
           </div>
         </div>
       </div>
