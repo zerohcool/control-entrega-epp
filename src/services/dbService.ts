@@ -688,6 +688,49 @@ class DBService {
     // Sort by date descending
     return logs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
+
+  async getFilteredDeliveriesForPrinting(startDate?: string, endDate?: string, status?: string): Promise<DeliveryWithDetails[]> {
+    let query = supabase
+      .from('deliveries')
+      .select(`
+        *,
+        worker:workers(*),
+        epp_item:epp_items(*)
+      `);
+
+    let dbStatus = '';
+    if (status && status !== 'Todos') {
+      dbStatus = status === 'Aprobado' ? 'Entregado' : status;
+      query = query.eq('status', dbStatus);
+    }
+
+    if (startDate) {
+      if (dbStatus === 'Entregado') {
+        query = query.gte('delivered_at', `${startDate}T00:00:00Z`);
+      } else if (dbStatus === 'Pendiente' || dbStatus === 'Rechazado') {
+        query = query.gte('created_at', `${startDate}T00:00:00Z`);
+      } else {
+        query = query.or(`delivered_at.gte.${startDate}T00:00:00Z,created_at.gte.${startDate}T00:00:00Z`);
+      }
+    }
+
+    if (endDate) {
+      if (dbStatus === 'Entregado') {
+        query = query.lte('delivered_at', `${endDate}T23:59:59Z`);
+      } else if (dbStatus === 'Pendiente' || dbStatus === 'Rechazado') {
+        query = query.lte('created_at', `${endDate}T23:59:59Z`);
+      } else {
+        query = query.or(`delivered_at.lte.${endDate}T23:59:59Z,created_at.lte.${endDate}T23:59:59Z`);
+      }
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('Error fetching filtered deliveries for printing:', error);
+      return [];
+    }
+    return (data || []) as unknown as DeliveryWithDetails[];
+  }
 }
 
 export const dbService = new DBService();

@@ -2,8 +2,13 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const WorkerProfile: React.FC = () => {
-  const { user, selectedWorkerId, navigate, deliveries, workers } = useApp();
+  const { user, selectedWorkerId, navigate, deliveries, workers, setAlert } = useApp();
   const [searchHistoryQuery, setSearchHistoryQuery] = useState('');
+  
+  // New Filters State
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterStatus, setFilterStatus] = useState('Todos');
 
   // Fetch the current worker
   const worker = workers.find(w => w.id === selectedWorkerId);
@@ -37,12 +42,57 @@ export const WorkerProfile: React.FC = () => {
 
   // Filter history
   const filteredDeliveries = workerDeliveries.filter(d => {
-    if (!searchHistoryQuery) return true;
-    const nameMatch = d.epp_item?.name.toLowerCase().includes(searchHistoryQuery.toLowerCase()) || false;
-    const notesMatch = d.notes?.toLowerCase().includes(searchHistoryQuery.toLowerCase()) || false;
-    const dateMatch = d.delivered_at ? new Date(d.delivered_at).toLocaleDateString().includes(searchHistoryQuery) : false;
-    return nameMatch || notesMatch || dateMatch;
+    // 1. Text search filter
+    if (searchHistoryQuery) {
+      const nameMatch = d.epp_item?.name.toLowerCase().includes(searchHistoryQuery.toLowerCase()) || false;
+      const notesMatch = d.notes?.toLowerCase().includes(searchHistoryQuery.toLowerCase()) || false;
+      const dateMatch = d.delivered_at ? new Date(d.delivered_at).toLocaleDateString().includes(searchHistoryQuery) : false;
+      if (!nameMatch && !notesMatch && !dateMatch) return false;
+    }
+
+    // 2. Status filter
+    if (filterStatus !== 'Todos') {
+      const dbStatus = filterStatus === 'Aprobado' ? 'Entregado' : filterStatus;
+      if (d.status !== dbStatus) return false;
+    }
+
+    // 3. Date range filter
+    const recordDateStr = d.delivered_at || d.created_at;
+    if (recordDateStr) {
+      const recordDate = new Date(recordDateStr);
+      recordDate.setHours(0, 0, 0, 0);
+
+      if (filterStartDate) {
+        const startDate = new Date(filterStartDate + 'T00:00:00');
+        if (recordDate < startDate) return false;
+      }
+
+      if (filterEndDate) {
+        const endDate = new Date(filterEndDate + 'T23:59:59');
+        if (recordDate > endDate) return false;
+      }
+    }
+
+    return true;
   });
+
+  const handlePrint = () => {
+    if (filterStartDate && filterEndDate) {
+      const start = new Date(filterStartDate + 'T00:00:00');
+      const end = new Date(filterEndDate + 'T00:00:00');
+      if (start > end) {
+        setAlert('La fecha "Desde" no puede ser mayor que "Hasta".', 'error');
+        return;
+      }
+    }
+
+    if (filteredDeliveries.length === 0) {
+      setAlert('No existen registros para imprimir con los filtros seleccionados.', 'warning');
+      return;
+    }
+
+    window.print();
+  };
 
   return (
     <div className="p-margin-page flex-1 max-w-container-max mx-auto w-full">
@@ -65,9 +115,7 @@ export const WorkerProfile: React.FC = () => {
 
         <div className="flex gap-3 w-full sm:w-auto">
           <button
-            onClick={() => {
-              window.print();
-            }}
+            onClick={handlePrint}
             className="flex-1 sm:flex-initial bg-white border border-outline text-primary font-label-md text-label-md px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">print</span>
@@ -159,6 +207,61 @@ export const WorkerProfile: React.FC = () => {
                   className="w-full pl-9 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface focus:border-primary outline-none transition-colors h-8 text-left"
                 />
               </div>
+            </div>
+
+            {/* Filters Bar - Visible on screen, hidden on print */}
+            <div className="bg-surface-container-low border border-outline-variant/60 rounded-xl p-4 mb-4 flex flex-col gap-4 print:hidden text-left">
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">Filtros de Historial</span>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Start Date */}
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filter-start" className="text-[10px] font-bold text-on-surface-variant uppercase">Desde</label>
+                  <input
+                    id="filter-start"
+                    type="date"
+                    value={filterStartDate}
+                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    className="px-3 py-1.5 bg-white border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface focus:border-primary outline-none transition-colors h-9"
+                  />
+                </div>
+
+                {/* End Date */}
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filter-end" className="text-[10px] font-bold text-on-surface-variant uppercase">Hasta</label>
+                  <input
+                    id="filter-end"
+                    type="date"
+                    value={filterEndDate}
+                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    className="px-3 py-1.5 bg-white border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface focus:border-primary outline-none transition-colors h-9"
+                  />
+                </div>
+
+                {/* Status Selector */}
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filter-status" className="text-[10px] font-bold text-on-surface-variant uppercase">Estado</label>
+                  <select
+                    id="filter-status"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="px-3 py-1.5 bg-white border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface focus:border-primary outline-none transition-colors h-9 cursor-pointer"
+                  >
+                    <option value="Todos">Todos</option>
+                    <option value="Aprobado">Aprobado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Rechazado">Rechazado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Date validation warning text */}
+              {filterStartDate && filterEndDate && new Date(filterStartDate + 'T00:00:00') > new Date(filterEndDate + 'T00:00:00') && (
+                <div className="flex items-center gap-1.5 text-xs text-red-600 font-bold mt-1">
+                  <span className="material-symbols-outlined text-[16px]">warning</span>
+                  La fecha "Desde" no puede ser mayor que "Hasta".
+                </div>
+              )}
             </div>
 
             {/* Table Container - Desktop/Tablet */}
