@@ -1,23 +1,125 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { getCategoryIcon } from '../models/types';
 
 export const NavBar: React.FC = () => {
-  const { user, logout, activeView, navigate, cart, removeFromCart, updateCartQuantity, submitCartRequest, isMobileMenuOpen, setIsMobileMenuOpen, workers, selectedWorkerId } = useApp();
+  const { user, logout, activeView, navigate, cart, removeFromCart, updateCartQuantity, submitCartRequest, isMobileMenuOpen, setIsMobileMenuOpen, workers, selectedWorkerId, setAlert } = useApp();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [workerSearchQuery, setWorkerSearchQuery] = useState('');
   const [isWorkerDropdownOpen, setIsWorkerDropdownOpen] = useState(false);
 
+  // Digital Signature Canvas Ref and States
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
+
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  useEffect(() => {
+    if (isCartOpen && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const timer = setTimeout(() => {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.scale(2, 2);
+          ctx.strokeStyle = '#091426';
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+        }
+        setIsSignatureEmpty(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isCartOpen]);
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return;
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+    setIsSignatureEmpty(false);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return;
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setIsSignatureEmpty(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const success = submitCartRequest(notes);
+    if (isSignatureEmpty || !canvasRef.current) {
+      setAlert('La firma del trabajador es obligatoria para finalizar y confirmar la entrega.', 'error');
+      return;
+    }
+    const signature = canvasRef.current.toDataURL('image/png');
+    const success = submitCartRequest(notes, signature);
     if (success) {
       setIsCartOpen(false);
       setNotes('');
+      clearSignature();
     }
   };
 
@@ -324,6 +426,49 @@ export const NavBar: React.FC = () => {
                         </span>
                       </div>
                       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        {/* Digital Signature Field */}
+                        <div className="flex flex-col gap-1 text-left">
+                          <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1 flex justify-between items-center">
+                            <span>Firma del Trabajador <span className="text-red-500">*</span></span>
+                            {isSignatureEmpty ? (
+                              <span className="text-[10px] text-red-500 font-bold tracking-normal normal-case">Requerido</span>
+                            ) : (
+                              <span className="text-[10px] text-green-600 font-bold tracking-normal normal-case flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-xs">done</span>
+                                Firmado
+                              </span>
+                            )}
+                          </label>
+                          <div className="relative border border-outline-variant rounded-lg overflow-hidden bg-white h-32 shadow-inner">
+                            <canvas
+                              ref={canvasRef}
+                              onMouseDown={startDrawing}
+                              onMouseMove={draw}
+                              onMouseUp={stopDrawing}
+                              onMouseLeave={stopDrawing}
+                              onTouchStart={startDrawing}
+                              onTouchMove={draw}
+                              onTouchEnd={stopDrawing}
+                              className="w-full h-full cursor-crosshair touch-none"
+                            />
+                            {isSignatureEmpty && (
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40 text-xs text-on-surface-variant">
+                                Firme aquí con su dedo o mouse
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={clearSignature}
+                              className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 mt-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+                              Limpiar firma
+                            </button>
+                          </div>
+                        </div>
+
                         <div>
                           <label htmlFor="notes" className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
                             Notas u Observaciones (opcional)

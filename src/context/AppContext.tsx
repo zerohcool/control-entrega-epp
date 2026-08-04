@@ -37,7 +37,7 @@ interface AppContextType {
   removeFromCart: (itemId: string) => void;
   updateCartQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
-  submitCartRequest: (notes?: string) => boolean;
+  submitCartRequest: (notes?: string, signature?: string) => boolean;
   setAlert: (message: string, type: 'success' | 'error' | 'warning', duration?: number) => void;
   refreshData: () => Promise<void>;
   approveRequest: (deliveryId: string) => void;
@@ -203,7 +203,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCart([]);
   };
 
-  const submitCartRequest = (notes = ''): boolean => {
+  const submitCartRequest = (notes = '', signature = ''): boolean => {
     if (cart.length === 0) {
       setAlert('La solicitud está vacía', 'error');
       return false;
@@ -242,7 +242,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               status: 'Pendiente',
               delivered_at: null,
               notes: notes || (user?.role === 'admin' ? 'Ingresado por administrador' : 'Solicitado por el trabajador'),
-              request_number: nextRequestNum
+              request_number: nextRequestNum,
+              signature: signature || null
             })
           ));
 

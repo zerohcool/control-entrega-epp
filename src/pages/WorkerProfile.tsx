@@ -170,12 +170,13 @@ export const WorkerProfile: React.FC = () => {
                     <th className="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-xs font-semibold">Ítem EPP</th>
                     <th className="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase w-20 tracking-wider text-xs font-semibold text-right">Cant.</th>
                     <th className="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase w-36 tracking-wider text-xs font-semibold">Estado</th>
+                    <th className="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase w-36 tracking-wider text-xs font-semibold text-center">Firma</th>
                   </tr>
                 </thead>
                 <tbody className="font-body-md text-body-md">
                   {filteredDeliveries.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-on-surface-variant opacity-60 text-sm">
+                      <td colSpan={5} className="py-8 text-center text-on-surface-variant opacity-60 text-sm">
                         No se encontraron registros de entrega.
                       </td>
                     </tr>
@@ -206,6 +207,17 @@ export const WorkerProfile: React.FC = () => {
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${statusBadge}`}>
                               {d.status}
                             </span>
+                          </td>
+                          <td className="py-2 px-4 text-center">
+                            {d.signature ? (
+                              <img
+                                src={d.signature}
+                                className="h-8 max-w-[100px] object-contain border border-outline-variant/30 rounded bg-white p-0.5 mx-auto"
+                                alt="Firma Colaborador"
+                              />
+                            ) : (
+                              <span className="text-xs text-on-surface-variant opacity-60">N/A</span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -252,6 +264,12 @@ export const WorkerProfile: React.FC = () => {
                         <span className="text-xs text-on-surface-variant">Cantidad: <strong className="font-mono-data text-on-surface text-sm">{d.quantity}</strong></span>
                         {d.notes && <span className="text-[10px] text-on-surface-variant truncate max-w-[150px]" title={d.notes}>Nota: {d.notes}</span>}
                       </div>
+                      {d.signature && (
+                        <div className="border-t border-outline-variant/20 pt-2 flex flex-col gap-1">
+                          <span className="text-[9px] text-on-surface-variant font-bold uppercase">Firma digital:</span>
+                          <img src={d.signature} className="h-10 w-auto max-w-[120px] object-contain border border-outline-variant/30 rounded bg-white p-0.5" alt="Firma Trabajador" />
+                        </div>
+                      )}
                     </div>
                   );
                 })

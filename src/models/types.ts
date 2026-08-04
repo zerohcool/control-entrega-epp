@@ -45,6 +45,7 @@ export interface Delivery {
   notes?: string;
   request_number: string; // Unique number for group tracking (e.g. SOL-0001)
   created_at: string;
+  signature?: string | null;
 }
 
 export interface DeliveryWithDetails extends Delivery {
