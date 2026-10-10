@@ -27,11 +27,16 @@ export const SideNavBar: React.FC = () => {
 
       <aside className={`fixed flex flex-col left-0 top-0 h-full w-[260px] bg-primary text-on-primary py-stack-lg border-r border-outline-variant/20 z-40 transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden`}>
         {/* Header Profile info */}
-        <div className="px-5 mb-6 flex flex-col gap-4">
-          <div className="flex justify-center items-center py-2">
-            <img src="/Logo Enaex Letra Blanca.png" alt="Enaex Logo" className="h-10 object-contain" />
+        <div className="px-5 mb-6 flex flex-col gap-3">
+          <div className="flex justify-center items-center py-1">
+            <img src="/Logo Enaex Letra Blanca.png" alt="Enaex Logo" className="h-9 object-contain" />
           </div>
-          <div className="flex items-center gap-3 border-t border-outline-variant/10 pt-4">
+          <div className="text-center bg-primary-container/30 border border-outline-variant/20 rounded-lg p-2">
+            <p className="text-xs font-bold text-white tracking-wide uppercase">Enaex Servicios S.A.</p>
+            <p className="text-[10px] text-white/80 font-mono font-medium">RUT: 76.041.871-4</p>
+            <p className="text-[10px] text-secondary-fixed font-semibold mt-0.5">Enaex Planta Sierra Gorda</p>
+          </div>
+          <div className="flex items-center gap-3 border-t border-outline-variant/10 pt-3">
             <div className="w-8 h-8 rounded bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-sm">
               A
             </div>

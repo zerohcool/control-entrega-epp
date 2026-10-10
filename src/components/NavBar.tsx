@@ -137,6 +137,10 @@ export const NavBar: React.FC = () => {
             <img src="/logo.png" alt="Enaex Logo" className="h-6 md:h-7 object-contain mr-1" />
             <span className="hidden sm:inline font-headline-md text-headline-md font-bold text-primary tracking-tight border-l border-outline-variant/60 pl-3 ml-1">EPP Control</span>
             <span className="sm:hidden font-label-lg text-label-lg font-bold text-primary tracking-tight ml-1">EPP Control</span>
+            <div className="hidden lg:flex flex-col border-l border-outline-variant/60 pl-3 ml-2 text-left">
+              <span className="text-[11px] font-extrabold text-primary leading-tight">Enaex Servicios S.A.</span>
+              <span className="text-[10px] text-on-surface-variant font-medium leading-tight">Planta Sierra Gorda • RUT 76.041.871-4</span>
+            </div>
           </div>
         </div>
 

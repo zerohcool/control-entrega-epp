@@ -131,8 +131,8 @@ export const WorkerProfile: React.FC = () => {
         </div>
       </div>
 
-      {/* Official Company Document Header (Visible in Print) */}
-      <div className="hidden print:flex justify-between items-start border-b-2 border-primary/20 pb-4 mb-6 text-left w-full">
+      {/* Official Company Document Header (Visible on Screen and in Print) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-outline-variant/60 rounded-xl p-5 mb-6 bg-white shadow-sm print:shadow-none print:border-b-2 print:border-primary/20 print:border-t-0 print:border-x-0 print:rounded-none print:p-0 print:pb-4 text-left w-full">
         <div className="flex items-center gap-4">
           <img src="/logo.png" alt="Enaex Servicios S.A." className="h-12 object-contain" />
           <div className="border-l-2 border-outline-variant/60 pl-4">
@@ -143,8 +143,8 @@ export const WorkerProfile: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="text-right flex flex-col items-end">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
+        <div className="text-left sm:text-right flex flex-col sm:items-end">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20 self-start sm:self-auto">
             Ficha de Control Entrega EPP
           </span>
           <p className="text-[11px] text-on-surface-variant font-mono mt-1">

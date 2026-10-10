@@ -44,7 +44,14 @@ export const Login: React.FC = () => {
         <h1 className="text-lg md:text-xl font-bold text-primary tracking-wider uppercase">
           Gestión de EPP & Control de Inventario
         </h1>
-        <p className="text-xs md:text-sm text-on-surface-variant mt-1">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs">
+          <span className="font-extrabold text-primary uppercase">Enaex Servicios S.A.</span>
+          <span className="text-outline-variant font-bold">•</span>
+          <span className="font-mono font-bold text-on-surface">RUT: 76.041.871-4</span>
+          <span className="text-outline-variant font-bold">•</span>
+          <span className="font-semibold text-primary">Enaex Planta Sierra Gorda</span>
+        </div>
+        <p className="text-xs md:text-sm text-on-surface-variant mt-2">
           Plataforma para el registro, asignación y auditoría de Elementos de Protección Personal.
         </p>
       </div>
