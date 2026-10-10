@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentación: Plataforma Gestión EPP & Control de Inventario</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Geist+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Geist Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              dark: '#0f172a',
+              card: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      body { background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+      .slide-container { display: block !important; }
+      .slide-page {
+        page-break-after: always !important;
+        break-after: page !important;
+        height: 100vh !important;
+        display: flex !important;
+        padding: 2rem !important;
+        background: white !important;
+        color: #0f172a !important;
+      }
+      .slide-page * { color: inherit !important; }
+    }
+    .slide-enter {
+      animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.995); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans select-none overflow-hidden">
+
+  <!-- Top Navigation Bar -->
+  <header class="no-print h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur px-6 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-orange-600 flex items-center justify-center font-black text-white text-lg tracking-wider shadow-lg shadow-orange-600/30">
+        E
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+          Control Entrega EPP
+          <span class="text-[10px] font-mono uppercase bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">v2.4 Pro</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">Presentación Ejecutiva • Arquitectura y Flujos del Sistema</p>
+      </div>
+    </div>
+
+    <!-- Slide Indicators & Controls -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/60 text-xs font-mono">
+        <span id="current-slide-num" class="text-orange-400 font-bold">1</span>
+        <span class="text-slate-500">/</span>
+        <span id="total-slides-num" class="text-slate-400">5</span>
+      </div>
+
+      <div class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
+        <button onclick="prevSlide()" class="p-1.5 hover:bg-slate-700 text-slate-300 hover:text-white rounded transition cursor-pointer" title="Anterior (Flecha Izquierda)">
+          <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        </button>
+        <button onclick="nextSlide()" class="p-1.5 hover:bg-slate-700 text-slate-300 hover:text-white rounded transition cursor-pointer" title="Siguiente (Flecha Derecha / Espacio)">
+          <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </button>
+      </div>
+
+      <button onclick="toggleFullScreen()" class="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition cursor-pointer" title="Pantalla Completa">
+        <span class="material-symbols-outlined text-[20px]">fullscreen</span>
+      </button>
+
+      <button onclick="window.print()" class="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-md shadow-orange-600/20 cursor-pointer" title="Imprimir / Exportar a PDF">
+        <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+        Exportar PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Presentation Stage -->
+  <main class="flex-1 relative overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center p-4 md:p-8">
+
+    <!-- SLIDE 1: ACCESO Y AUTENTICACIÓN DUAL -->
+    <section class="slide-page absolute inset-4 md:inset-8 flex flex-col lg:flex-row gap-6 items-stretch slide-enter" data-slide="1">
+      <!-- Left: Narrative -->
+      <div class="lg:w-5/12 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 md:p-8 flex flex-col justify-between backdrop-blur-sm shadow-2xl overflow-y-auto">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-orange-400 font-bold bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full">
+              Slide 01 • Autenticación
+            </span>
+            <span class="text-[11px] text-slate-400 font-mono">Arquitectura Dual</span>
+          </div>
+
+          <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+            Acceso Rápido y Roles Diferenciados
+          </h2>
+          <p class="text-slate-300 text-sm mt-3 leading-relaxed">
+            Diseñado para eliminar fricciones operativas en terreno, separando la experiencia rápida del operario de faena frente al control total de bodega.
+          </p>
+
+          <div class="mt-6 space-y-4">
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-4">
+              <div class="flex items-center gap-2.5 text-orange-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[20px]">badge</span>
+                Portal Colaborador (Sin Contraseña)
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Ingreso directo por <strong>RUT</strong> con motor de autocompletado predictivo en tiempo real. Permite que cualquier trabajador consulte su saldo de EPP y solicite reposiciones en menos de 5 segundos.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-4">
+              <div class="flex items-center gap-2.5 text-blue-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                Acceso Administrador (Jefaturas y Pañol)
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Ingreso protegido con credenciales encriptadas para pañoleros, supervisores de seguridad y administradores. Permite autorizaciones, compras, auditorías y edición de nóminas.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-400">
+          <span class="flex items-center gap-1.5 font-mono text-[11px]">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Responsive Móvil & Escritorio
+          </span>
+          <span class="font-mono text-[11px] text-orange-400/90 font-bold">100% Adaptativo</span>
+        </div>
+      </div>
+
+      <!-- Right: Screenshot -->
+      <div class="lg:w-7/12 bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center p-3 group relative">
+        <img src="./public/slides/slide1_login.png" alt="Pantalla de Acceso" class="w-full h-full object-contain rounded-xl shadow-inner transition-transform duration-500 group-hover:scale-[1.01]" />
+        <div class="absolute bottom-5 right-5 bg-slate-900/90 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-mono backdrop-blur flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px] text-orange-400">login</span>
+          Vista: Acceso Trabajador vs. Administrador
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: CATÁLOGO Y FIRMA DIGITAL OBLIGATORIA -->
+    <section class="slide-page absolute inset-4 md:inset-8 flex flex-col lg:flex-row gap-6 items-stretch slide-enter hidden" data-slide="2">
+      <!-- Left: Narrative -->
+      <div class="lg:w-5/12 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 md:p-8 flex flex-col justify-between backdrop-blur-sm shadow-2xl overflow-y-auto">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-orange-400 font-bold bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full">
+              Slide 02 • Despacho & Trazabilidad
+            </span>
+            <span class="text-[11px] text-slate-400 font-mono">Evidencia Conforme</span>
+          </div>
+
+          <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+            Catálogo y Firma Digital en Pantalla
+          </h2>
+          <p class="text-slate-300 text-sm mt-3 leading-relaxed">
+            Transforma la entrega de EPP en un proceso 100% digital, eliminando el papeleo físico y garantizando respaldo auditable al instante.
+          </p>
+
+          <div class="mt-5 space-y-3.5">
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">draw</span>
+                Firma Táctil Obligatoria (Canvas Retina x2)
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                El trabajador firma con el dedo en celulares/tablets o con el mouse. <strong>Bloqueo de seguridad:</strong> El sistema impide despachar o confirmar cualquier entrega si no existe una firma válida dibujada.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-orange-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">grid_view</span>
+                Catálogo Dinámico por Categorías
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Filtros por familias de riesgo: Alturas, Cabeza, Manos, Piel, Pies y Auditivo. Switch conmutable entre modo tarjeta visual y lista compacta optimizada para faena.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-cyan-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">database</span>
+                Almacenamiento Criptográfico
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                La firma se almacena en Supabase en formato Base64 PNG vinculada indisolublemente al ID de entrega, usuario solicitante y timestamp exacto.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-5 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-400">
+          <span class="font-mono text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">verified</span> Respaldo Jurídico Inalterable
+          </span>
+          <span class="font-mono text-[11px]">Cero Papel</span>
+        </div>
+      </div>
+
+      <!-- Right: Screenshot -->
+      <div class="lg:w-7/12 bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center p-3 group relative">
+        <img src="./public/slides/slide2_catalogo_carrito_firma.png" alt="Catálogo y Carrito con Firma Digital" class="w-full h-full object-contain rounded-xl shadow-inner transition-transform duration-500 group-hover:scale-[1.01]" />
+        <div class="absolute bottom-5 right-5 bg-slate-900/90 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-mono backdrop-blur flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px] text-emerald-400">history_edu</span>
+          Vista: Carrito de Entrega + Lienzo de Firma Digital
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: FICHA DE TRABAJADOR Y CUMPLIMIENTO LEGAL -->
+    <section class="slide-page absolute inset-4 md:inset-8 flex flex-col lg:flex-row gap-6 items-stretch slide-enter hidden" data-slide="3">
+      <!-- Left: Narrative -->
+      <div class="lg:w-5/12 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 md:p-8 flex flex-col justify-between backdrop-blur-sm shadow-2xl overflow-y-auto">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-orange-400 font-bold bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full">
+              Slide 03 • Auditoría Individual
+            </span>
+            <span class="text-[11px] text-slate-400 font-mono">Ficha Histórica</span>
+          </div>
+
+          <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+            Ficha del Trabajador y DS N° 594
+          </h2>
+          <p class="text-slate-300 text-sm mt-3 leading-relaxed">
+            Consolidación integral de la hoja de vida de EPP de cada colaborador, con filtros dinámicos, visualización de firmas y respaldo normativo chileno.
+          </p>
+
+          <div class="mt-5 space-y-3.5">
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-orange-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">filter_alt</span>
+                Filtros Dinámicos en Pantalla e Impresión
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Filtra por <strong>Rango de Fechas (Desde / Hasta)</strong> y <strong>Estado</strong> (Aprobado, Pendiente, Rechazado). El botón <em>"Imprimir Ficha"</em> genera el reporte físico conteniendo estrictamente las entregas filtradas.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-cyan-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">gavel</span>
+                Artículo 53 Decreto Supremo N° 594
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Cumplimiento directo con la ley: el documento emitido acredita la entrega libre de costo y la obligación de uso permanente ante la <strong>Dirección del Trabajo</strong> y <strong>Seremi de Salud</strong>.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-purple-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">signature</span>
+                Firmas Digitales en Cada Fila
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Cada retiro realizado muestra la rúbrica exacta capturada al momento del despacho, impidiendo suplantaciones y reclamos posteriores.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-5 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-400">
+          <span class="font-mono text-[11px] text-orange-400 font-bold">Respaldo Auditable Oficial</span>
+          <span class="font-mono text-[11px]">PDF Individual</span>
+        </div>
+      </div>
+
+      <!-- Right: Screenshot -->
+      <div class="lg:w-7/12 bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center p-3 group relative">
+        <img src="./public/slides/slide3_ficha_trabajador.png" alt="Ficha del Trabajador con Historial y Firmas" class="w-full h-full object-contain rounded-xl shadow-inner transition-transform duration-500 group-hover:scale-[1.01]" />
+        <div class="absolute bottom-5 right-5 bg-slate-900/90 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-mono backdrop-blur flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px] text-cyan-400">assignment_turned_in</span>
+          Vista: Ficha de Personal, Firmas y Filtros
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: DASHBOARD Y CONTROL DE STOCK CRÍTICO -->
+    <section class="slide-page absolute inset-4 md:inset-8 flex flex-col lg:flex-row gap-6 items-stretch slide-enter hidden" data-slide="4">
+      <!-- Left: Narrative -->
+      <div class="lg:w-5/12 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 md:p-8 flex flex-col justify-between backdrop-blur-sm shadow-2xl overflow-y-auto">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-orange-400 font-bold bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full">
+              Slide 04 • Operaciones de Bodega
+            </span>
+            <span class="text-[11px] text-slate-400 font-mono">Control en Tiempo Real</span>
+          </div>
+
+          <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+            Dashboard Operativo y Stock Crítico
+          </h2>
+          <p class="text-slate-300 text-sm mt-3 leading-relaxed">
+            Centro de comando para personal de pañol y supervisores de seguridad, optimizado para rápida toma de decisiones y despacho sin demoras.
+          </p>
+
+          <div class="mt-5 space-y-3.5">
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-rose-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">pending_actions</span>
+                Autorizaciones Pendientes Instantáneas
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Bandeja de solicitudes emitidas por colaboradores en terreno. El supervisor aprueba o rechaza con un solo clic, descontando el inventario automáticamente.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+                Alertas Preventivas de Quiebre de Stock
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Identificación visual de EPPs bajo el límite de seguridad (stock mínimo), permitiendo anticipar órdenes de compra antes de que falte equipo en faena.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">table_view</span>
+                Exportación Directa a Excel
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Descarga de la planilla maestra de inventario valorizado para cruces contables y balances con ERP de la compañía.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-5 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-400">
+          <span class="font-mono text-[11px] text-emerald-400 font-bold">Cero Quiebres de Stock</span>
+          <span class="font-mono text-[11px]">Sincronización Supabase</span>
+        </div>
+      </div>
+
+      <!-- Right: Screenshot -->
+      <div class="lg:w-7/12 bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center p-3 group relative">
+        <img src="./public/slides/slide4_admin_dashboard.png" alt="Dashboard de Administración y Stock" class="w-full h-full object-contain rounded-xl shadow-inner transition-transform duration-500 group-hover:scale-[1.01]" />
+        <div class="absolute bottom-5 right-5 bg-slate-900/90 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-mono backdrop-blur flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px] text-rose-400">dashboard</span>
+          Vista: Solicitudes Pendientes & Control de Bodega
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: IMPRESIÓN MASIVA Y AUDITORÍAS POR LOTES -->
+    <section class="slide-page absolute inset-4 md:inset-8 flex flex-col lg:flex-row gap-6 items-stretch slide-enter hidden" data-slide="5">
+      <!-- Left: Narrative -->
+      <div class="lg:w-5/12 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 md:p-8 flex flex-col justify-between backdrop-blur-sm shadow-2xl overflow-y-auto">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-orange-400 font-bold bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full">
+              Slide 05 • Cumplimiento & Fiscalización
+            </span>
+            <span class="text-[11px] text-slate-400 font-mono">Reportes Masivos</span>
+          </div>
+
+          <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+            Impresión Masiva para Auditorías
+          </h2>
+          <p class="text-slate-300 text-sm mt-3 leading-relaxed">
+            Generación automatizada de expedientes consolidados de entrega de EPP, preparada para responder a fiscalizaciones laborales sin esfuerzo manual.
+          </p>
+
+          <div class="mt-5 space-y-3.5">
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-orange-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">print_connect</span>
+                Botón "Imprimir Registros Masivos"
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Ubicado en el módulo Personal / Proveedores. Abre un asistente modal con filtros de fecha <strong>(Desde / Hasta)</strong> y estado de entrega.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-cyan-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">bolt</span>
+                Consulta Optimizada Directa a Supabase
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Filtra a nivel de base de datos sin sobrecargar la memoria del cliente. Trae únicamente los registros requeridos para la fiscalización.
+              </p>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5">
+              <div class="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                <span class="material-symbols-outlined text-[18px]">auto_stories</span>
+                PDF Consolidado con Saltos de Página
+              </div>
+              <p class="text-slate-300 text-xs mt-1 leading-relaxed">
+                Ordena por <strong>Departamento ➔ Trabajador ➔ Fecha</strong>. Genera cada ficha con el diseño formal idéntico y firma digital, aplicando saltos de página CSS automáticos (1 ficha por hoja).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-5 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-400">
+          <span class="font-mono text-[11px] text-emerald-400 font-bold">Listo para Fiscalizadores DT</span>
+          <span class="font-mono text-[11px]">Un solo archivo PDF</span>
+        </div>
+      </div>
+
+      <!-- Right: Screenshot -->
+      <div class="lg:w-7/12 bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center p-3 group relative">
+        <img src="./public/slides/slide5_impresion_masiva.png" alt="Modal de Impresión Masiva" class="w-full h-full object-contain rounded-xl shadow-inner transition-transform duration-500 group-hover:scale-[1.01]" />
+        <div class="absolute bottom-5 right-5 bg-slate-900/90 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-mono backdrop-blur flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px] text-orange-400">picture_as_pdf</span>
+          Vista: Parametrización y Generación de Lotes
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Slide Bar / Dots -->
+  <footer class="no-print h-14 border-t border-slate-800 bg-slate-900/90 backdrop-blur px-8 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-2">
+      <button onclick="goToSlide(1)" class="slide-dot w-8 h-2 rounded-full bg-orange-500 transition-all cursor-pointer" title="Slide 1"></button>
+      <button onclick="goToSlide(2)" class="slide-dot w-2.5 h-2 rounded-full bg-slate-700 hover:bg-slate-500 transition-all cursor-pointer" title="Slide 2"></button>
+      <button onclick="goToSlide(3)" class="slide-dot w-2.5 h-2 rounded-full bg-slate-700 hover:bg-slate-500 transition-all cursor-pointer" title="Slide 3"></button>
+      <button onclick="goToSlide(4)" class="slide-dot w-2.5 h-2 rounded-full bg-slate-700 hover:bg-slate-500 transition-all cursor-pointer" title="Slide 4"></button>
+      <button onclick="goToSlide(5)" class="slide-dot w-2.5 h-2 rounded-full bg-slate-700 hover:bg-slate-500 transition-all cursor-pointer" title="Slide 5"></button>
+    </div>
+
+    <div class="text-[11px] text-slate-400 font-mono flex items-center gap-4">
+      <span>Navegación: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300 font-bold">←</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300 font-bold">→</kbd> o <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300 font-bold">Espacio</kbd></span>
+      <span class="text-slate-600">•</span>
+      <span>Desarrollado para Enaex • Control EPP 2026</span>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 5;
+
+    function updateSlide() {
+      const slides = document.querySelectorAll('.slide-page');
+      const dots = document.querySelectorAll('.slide-dot');
+      
+      slides.forEach((s, idx) => {
+        if (idx + 1 === currentSlide) {
+          s.classList.remove('hidden');
+          s.classList.add('slide-enter');
+        } else {
+          s.classList.add('hidden');
+          s.classList.remove('slide-enter');
+        }
+      });
+
+      dots.forEach((d, idx) => {
+        if (idx + 1 === currentSlide) {
+          d.className = 'slide-dot w-8 h-2 rounded-full bg-orange-500 transition-all cursor-pointer';
+        } else {
+          d.className = 'slide-dot w-2.5 h-2 rounded-full bg-slate-700 hover:bg-slate-500 transition-all cursor-pointer';
+        }
+      });
+
+      document.getElementById('current-slide-num').textContent = currentSlide;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+      } else {
+        currentSlide = 1;
+      }
+      updateSlide();
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+      } else {
+        currentSlide = totalSlides;
+      }
+      updateSlide();
+    }
+
+    function goToSlide(n) {
+      currentSlide = n;
+      updateSlide();
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      } else if (e.key >= '1' && e.key <= '5') {
+        goToSlide(parseInt(e.key));
+      }
+    });
+  </script>
+</body>
+</html>
