@@ -131,9 +131,34 @@ export const WorkerProfile: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+      {/* Official Company Document Header (Visible in Print) */}
+      <div className="hidden print:flex justify-between items-start border-b-2 border-primary/20 pb-4 mb-6 text-left w-full">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="Enaex Servicios S.A." className="h-12 object-contain" />
+          <div className="border-l-2 border-outline-variant/60 pl-4">
+            <h1 className="text-base font-extrabold text-primary tracking-tight uppercase">Enaex Servicios S.A.</h1>
+            <p className="text-xs font-mono font-bold text-on-surface">RUT: 76.041.871-4</p>
+            <p className="text-xs font-medium text-on-surface-variant mt-0.5">
+              <span className="font-semibold text-primary">Planta:</span> Enaex Planta Sierra Gorda
+            </p>
+          </div>
+        </div>
+        <div className="text-right flex flex-col items-end">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
+            Ficha de Control Entrega EPP
+          </span>
+          <p className="text-[11px] text-on-surface-variant font-mono mt-1">
+            Reporte de Asignaciones y Entregas
+          </p>
+          <p className="text-[10px] text-on-surface-variant font-mono mt-0.5">
+            Fecha de Emisión: {new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 print:grid print:grid-cols-12 print:gap-6 gap-gutter">
         {/* Left Column: Worker info card */}
-        <div className="col-span-12 md:col-span-4 flex flex-col gap-gutter text-left">
+        <div className="col-span-12 md:col-span-4 print:col-span-4 flex flex-col gap-gutter text-left">
           <div className="bg-white border border-outline-variant rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-4 border-b border-outline-variant/30 pb-4 mb-4">
               <div className="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-lg">
@@ -146,6 +171,15 @@ export const WorkerProfile: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-3 print:grid print:grid-cols-2 print:gap-x-8 print:gap-y-3">
+              <div>
+                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Empresa / Razón Social</span>
+                <p className="font-body-md text-body-md text-on-surface font-semibold">Enaex Servicios S.A.</p>
+                <p className="font-mono-data text-xs text-on-surface-variant font-bold">RUT: 76.041.871-4</p>
+              </div>
+              <div>
+                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Planta / Faena</span>
+                <p className="font-body-md text-body-md text-on-surface font-semibold">Enaex Planta Sierra Gorda</p>
+              </div>
               <div>
                 <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Cargo / Puesto</span>
                 <p className="font-body-md text-body-md text-on-surface font-semibold">{worker.cargo}</p>
@@ -189,7 +223,7 @@ export const WorkerProfile: React.FC = () => {
         </div>
 
         {/* Right Column: Deliveries History */}
-        <div className="col-span-12 md:col-span-8 flex flex-col gap-4 text-left">
+        <div className="col-span-12 md:col-span-8 print:col-span-8 flex flex-col gap-4 text-left">
           <div className="bg-white border border-outline-variant rounded-xl p-5 shadow-sm flex flex-col flex-1 min-h-[400px]">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-outline-variant/30 pb-4 mb-4">
               <h3 className="font-headline-sm text-headline-sm text-primary font-bold">Historial de Asignaciones y Entregas</h3>

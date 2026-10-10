@@ -177,8 +177,33 @@ export const Reports: React.FC = () => {
 
   return (
     <div className="flex-grow p-margin-page flex flex-col gap-stack-lg bg-background text-left max-w-container-max mx-auto w-full">
+      {/* Official Company Document Header (Only visible when printing / exporting PDF) */}
+      <div className="hidden print:flex justify-between items-start border-b-2 border-primary/20 pb-4 mb-4">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="Enaex Servicios S.A." className="h-12 object-contain" />
+          <div className="border-l-2 border-outline-variant/60 pl-4">
+            <h1 className="text-base font-extrabold text-primary tracking-tight uppercase">Enaex Servicios S.A.</h1>
+            <p className="text-xs font-mono font-bold text-on-surface">RUT: 76.041.871-4</p>
+            <p className="text-xs font-medium text-on-surface-variant mt-0.5">
+              <span className="font-semibold text-primary">Planta:</span> Enaex Planta Sierra Gorda
+            </p>
+          </div>
+        </div>
+        <div className="text-right flex flex-col items-end">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
+            Reporte de Control Entrega EPP
+          </span>
+          <p className="text-[11px] text-on-surface-variant font-mono mt-1">
+            Historial de Movimientos y Métricas
+          </p>
+          <p className="text-[10px] text-on-surface-variant font-mono mt-0.5">
+            Fecha de Emisión: {new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </p>
+        </div>
+      </div>
+
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-outline-variant pb-stack-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-outline-variant pb-stack-md print:hidden">
         <div>
           <h1 className="font-headline-lg text-headline-lg text-primary font-bold tracking-tight">
             Historial de Movimientos y Reportes
@@ -211,7 +236,7 @@ export const Reports: React.FC = () => {
       </div>
 
       {/* Dynamic Tabs */}
-      <div className="flex border-b border-outline-variant/60">
+      <div className="flex border-b border-outline-variant/60 print:hidden">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`px-5 py-3 font-label-lg text-label-lg font-bold flex items-center gap-2 border-b-2 transition-all ${

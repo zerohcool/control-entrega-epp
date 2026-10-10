@@ -1408,17 +1408,24 @@ export const WorkerSearch: React.FC = () => {
                 className="flex flex-col gap-6 text-left w-full border border-outline-variant/60 rounded-xl p-6 mb-8 bg-white min-h-[600px] break-after-page page-break-after"
                 style={{ pageBreakAfter: 'always', breakAfter: 'page' }}
               >
-                {/* Logo and Header */}
-                <div className="flex justify-between items-center border-b border-outline-variant/30 pb-4">
-                  <div className="flex items-center gap-3">
-                    <img src="/logo.png" alt="Enaex" className="h-10 object-contain" />
-                    <div>
-                      <h2 className="text-sm font-bold text-primary uppercase tracking-wider">Ficha de Control Entrega EPP</h2>
-                      <p className="text-[10px] text-on-surface-variant font-mono-data">Reporte Oficial de Auditoría</p>
+                {/* Logo and Header with Official Company Identification */}
+                <div className="flex justify-between items-start border-b-2 border-primary/20 pb-4">
+                  <div className="flex items-center gap-4">
+                    <img src="/logo.png" alt="Enaex Servicios S.A." className="h-12 object-contain" />
+                    <div className="border-l-2 border-outline-variant/60 pl-4 text-left">
+                      <h1 className="text-base font-extrabold text-primary tracking-tight uppercase">Enaex Servicios S.A.</h1>
+                      <p className="text-xs font-mono font-bold text-on-surface">RUT: 76.041.871-4</p>
+                      <p className="text-xs font-medium text-on-surface-variant mt-0.5">
+                        <span className="font-semibold text-primary">Planta:</span> Enaex Planta Sierra Gorda
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-mono-data text-on-surface-variant">Generado: {new Date().toLocaleDateString('es-CL')}</span>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
+                      Ficha de Control Entrega EPP
+                    </span>
+                    <p className="text-[11px] text-on-surface-variant font-mono mt-1">Reporte de Asignaciones y Entregas</p>
+                    <p className="text-[10px] text-on-surface-variant font-mono mt-0.5">Fecha de Emisión: {new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
                   </div>
                 </div>
 
@@ -1437,6 +1444,15 @@ export const WorkerSearch: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col gap-2.5">
+                      <div>
+                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Empresa / Razón Social</span>
+                        <p className="text-xs font-semibold text-on-surface">Enaex Servicios S.A.</p>
+                        <p className="text-[10px] font-mono text-on-surface-variant font-bold">RUT: 76.041.871-4</p>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Planta / Faena</span>
+                        <p className="text-xs font-semibold text-on-surface">Enaex Planta Sierra Gorda</p>
+                      </div>
                       <div>
                         <span className="text-[9px] font-bold text-on-surface-variant uppercase">Cargo</span>
                         <p className="text-xs font-semibold text-on-surface">{group.worker.cargo}</p>
