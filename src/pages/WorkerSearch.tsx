@@ -1431,130 +1431,124 @@ export const WorkerSearch: React.FC = () => {
                     <span className="text-xs font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
                       Ficha de Control Entrega EPP
                     </span>
-                    <p className="text-[11px] text-on-surface-variant font-mono mt-1">Reporte de Asignaciones y Entregas</p>
-                    <p className="text-[10px] text-on-surface-variant font-mono mt-0.5">Fecha de Emisión: {new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                    <p className="text-[11px] text-on-surface-variant font-mono mt-1">Reporte Oficial de Auditoría</p>
+                    <p className="text-[10px] text-on-surface-variant font-mono mt-0.5">Generado: {new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
                   </div>
                 </div>
 
-                {/* Grid layout */}
-                <div className="grid grid-cols-12 gap-6 mt-4">
-                  {/* Worker Info Card */}
-                  <div className="col-span-4 border border-outline-variant/60 rounded-xl p-5 bg-surface-container-low/20">
-                    <div className="flex items-center gap-3 border-b border-outline-variant/30 pb-3 mb-3">
+                {/* Worker Info Card - Full width horizontal card directly below company header */}
+                <div className="border border-outline-variant/60 rounded-xl p-4 bg-surface-container-low/20">
+                  <div className="flex justify-between items-center pb-3 border-b border-outline-variant/30">
+                    <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm">
                         {group.worker.first_name[0]}{group.worker.last_name[0]}
                       </div>
                       <div>
-                        <h3 className="font-bold text-primary text-sm">{group.worker.first_name} {group.worker.last_name}</h3>
-                        <p className="font-mono-data text-on-surface-variant text-[10px] font-bold mt-0.5">{group.worker.rut}</p>
+                        <h3 className="font-bold text-primary text-base leading-tight">
+                          {group.worker.first_name} {group.worker.last_name}
+                        </h3>
+                        <p className="font-mono-data text-on-surface font-bold text-xs mt-0.5">
+                          RUT: {group.worker.rut}
+                        </p>
                       </div>
                     </div>
-
-                    <div className="flex flex-col gap-2.5">
-                      <div>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Empresa / Razón Social</span>
-                        <p className="text-xs font-semibold text-on-surface">Enaex Servicios S.A.</p>
-                        <p className="text-[10px] font-mono text-on-surface-variant font-bold">RUT: 76.041.871-4</p>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Planta / Faena</span>
-                        <p className="text-xs font-semibold text-on-surface">Enaex Planta Sierra Gorda</p>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Cargo</span>
-                        <p className="text-xs font-semibold text-on-surface">{group.worker.cargo}</p>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Departamento</span>
-                        <p className="text-xs font-semibold text-on-surface">{group.worker.department}</p>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Email / Fono</span>
-                        <p className="text-xs font-semibold text-on-surface truncate">{group.worker.email}</p>
-                        <p className="text-[10px] text-on-surface-variant mt-0.5">{group.worker.phone}</p>
-                      </div>
-                      <div className="flex justify-between items-center border-t border-outline-variant/30 pt-2.5 mt-1">
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Estado</span>
-                        <span className="text-[9px] font-bold bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] px-2.5 py-0.5 rounded-full uppercase">
-                          {group.worker.status}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-on-surface-variant uppercase">Estado:</span>
+                      <span className="text-[10px] font-bold bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] px-2.5 py-0.5 rounded-full uppercase">
+                        {group.worker.status}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Deliveries Table and stats */}
-                  <div className="col-span-8 flex flex-col gap-4">
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="border border-outline-variant/60 rounded-xl p-3 text-center">
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">EPPs Entregados</span>
-                        <span className="block text-lg font-bold text-primary mt-0.5">{stats.totalDelivered}</span>
-                      </div>
-                      <div className="border border-outline-variant/60 rounded-xl p-3 text-center">
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase">Sol. Pendientes</span>
-                        <span className="block text-lg font-bold text-[#ea580c] mt-0.5">{stats.totalPending}</span>
-                      </div>
-                      <div className="border border-outline-variant/60 rounded-xl p-3 text-left">
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase block">Último Retiro</span>
-                        <span className="text-[10px] font-bold text-on-surface truncate block mt-0.5">{stats.lastDeliveryItem?.epp_item?.name || 'Ninguno'}</span>
-                        <span className="text-[9px] text-on-surface-variant block">{stats.lastDeliveryDate}</span>
-                      </div>
+                  <div className="grid grid-cols-4 gap-4 pt-3 text-left">
+                    <div>
+                      <span className="text-[9px] font-bold text-on-surface-variant uppercase block">Cargo</span>
+                      <p className="text-xs font-semibold text-on-surface mt-0.5">{group.worker.cargo}</p>
                     </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-on-surface-variant uppercase block">Departamento</span>
+                      <p className="text-xs font-semibold text-on-surface mt-0.5">{group.worker.department}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-on-surface-variant uppercase block">Email</span>
+                      <p className="text-xs font-semibold text-on-surface truncate mt-0.5" title={group.worker.email}>{group.worker.email}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-on-surface-variant uppercase block">Fono</span>
+                      <p className="text-xs font-semibold text-on-surface mt-0.5">{group.worker.phone}</p>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Table */}
-                    <div className="border border-outline-variant/60 rounded-xl overflow-hidden mt-1">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="border-b border-outline-variant bg-surface-container-low/50">
-                            <th className="py-2 px-3 font-bold text-on-surface-variant uppercase">Fecha</th>
-                            <th className="py-2 px-3 font-bold text-on-surface-variant uppercase">EPP</th>
-                            <th className="py-2 px-3 font-bold text-on-surface-variant uppercase text-right w-16">Cant.</th>
-                            <th className="py-2 px-3 font-bold text-on-surface-variant uppercase w-24">Estado</th>
-                            <th className="py-2 px-3 font-bold text-on-surface-variant uppercase text-center w-24">Firma</th>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="border border-outline-variant/60 rounded-xl p-3 text-center">
+                    <span className="text-[9px] font-bold text-on-surface-variant uppercase">EPPs Entregados</span>
+                    <span className="block text-lg font-bold text-primary mt-0.5">{stats.totalDelivered}</span>
+                  </div>
+                  <div className="border border-outline-variant/60 rounded-xl p-3 text-center">
+                    <span className="text-[9px] font-bold text-on-surface-variant uppercase">Sol. Pendientes</span>
+                    <span className="block text-lg font-bold text-[#ea580c] mt-0.5">{stats.totalPending}</span>
+                  </div>
+                  <div className="border border-outline-variant/60 rounded-xl p-3 text-left">
+                    <span className="text-[9px] font-bold text-on-surface-variant uppercase block">Último Retiro</span>
+                    <span className="text-[10px] font-bold text-on-surface truncate block mt-0.5">{stats.lastDeliveryItem?.epp_item?.name || 'Ninguno'}</span>
+                    <span className="text-[9px] text-on-surface-variant block">{stats.lastDeliveryDate}</span>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="border border-outline-variant/60 rounded-xl overflow-hidden">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-outline-variant bg-surface-container-low/50">
+                        <th className="py-2.5 px-3 font-bold text-on-surface-variant uppercase">Fecha</th>
+                        <th className="py-2.5 px-3 font-bold text-on-surface-variant uppercase">EPP</th>
+                        <th className="py-2.5 px-3 font-bold text-on-surface-variant uppercase text-right w-16">Cant.</th>
+                        <th className="py-2.5 px-3 font-bold text-on-surface-variant uppercase w-24">Estado</th>
+                        <th className="py-2.5 px-3 font-bold text-on-surface-variant uppercase text-center w-28">Firma</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.deliveries.map(d => {
+                        const displayDate = d.delivered_at
+                          ? new Date(d.delivered_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : new Date(d.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                        let statusBadge = '';
+                        if (d.status === 'Entregado') {
+                          statusBadge = 'bg-[#dcfce7] text-[#166534] border border-[#bbf7d0]';
+                        } else if (d.status === 'Pendiente') {
+                          statusBadge = 'bg-error-container text-on-error-container border border-error/20';
+                        } else if (d.status === 'Rechazado') {
+                          statusBadge = 'bg-red-50 text-[#b91c1c] border border-red-100';
+                        }
+
+                        return (
+                          <tr key={d.id} className="border-b border-outline-variant/40 hover:bg-surface-container-low/20 h-10">
+                            <td className="py-1 px-3 font-mono-data text-[10px]">{displayDate}</td>
+                            <td className="py-1 px-3 font-semibold text-on-surface">
+                              {d.epp_item?.name}
+                              <span className="block text-[8px] font-mono-data text-on-surface-variant">SKU: {d.epp_item?.sku}</span>
+                            </td>
+                            <td className="py-1 px-3 text-right font-bold font-mono-data">{d.quantity}</td>
+                            <td className="py-1 px-3">
+                              <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase ${statusBadge}`}>
+                                {d.status}
+                              </span>
+                            </td>
+                            <td className="py-1 px-3 text-center">
+                              {d.signature ? (
+                                <img src={d.signature} className="h-8 max-w-[100px] object-contain border border-outline-variant/30 rounded bg-white p-0.5 mx-auto" alt="Firma" />
+                              ) : (
+                                <span className="text-[10px] text-on-surface-variant opacity-60">N/A</span>
+                              )}
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {group.deliveries.map(d => {
-                            const displayDate = d.delivered_at
-                              ? new Date(d.delivered_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
-                              : new Date(d.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
-
-                            let statusBadge = '';
-                            if (d.status === 'Entregado') {
-                              statusBadge = 'bg-[#dcfce7] text-[#166534] border border-[#bbf7d0]';
-                            } else if (d.status === 'Pendiente') {
-                              statusBadge = 'bg-error-container text-on-error-container border border-error/20';
-                            } else if (d.status === 'Rechazado') {
-                              statusBadge = 'bg-red-50 text-[#b91c1c] border border-red-100';
-                            }
-
-                            return (
-                              <tr key={d.id} className="border-b border-outline-variant/40 hover:bg-surface-container-low/20 h-9">
-                                <td className="py-1 px-3 font-mono-data text-[10px]">{displayDate}</td>
-                                <td className="py-1 px-3 font-semibold text-on-surface">
-                                  {d.epp_item?.name}
-                                  <span className="block text-[8px] font-mono-data text-on-surface-variant">SKU: {d.epp_item?.sku}</span>
-                                </td>
-                                <td className="py-1 px-3 text-right font-bold font-mono-data">{d.quantity}</td>
-                                <td className="py-1 px-3">
-                                  <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase ${statusBadge}`}>
-                                    {d.status}
-                                  </span>
-                                </td>
-                                <td className="py-1 px-3 text-center">
-                                  {d.signature ? (
-                                    <img src={d.signature} className="h-6 max-w-[80px] object-contain border border-outline-variant/30 rounded bg-white p-0.5 mx-auto" alt="Firma" />
-                                  ) : (
-                                    <span className="text-[10px] text-on-surface-variant opacity-60">N/A</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Footnote disclaimer */}

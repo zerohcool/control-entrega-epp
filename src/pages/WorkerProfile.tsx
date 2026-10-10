@@ -148,106 +148,104 @@ export const WorkerProfile: React.FC = () => {
             Ficha de Control Entrega EPP
           </span>
           <p className="text-[11px] text-on-surface-variant font-mono mt-1">
-            Reporte de Asignaciones y Entregas
+            Reporte Oficial de Auditoría
           </p>
           <p className="text-[10px] text-on-surface-variant font-mono mt-0.5">
-            Fecha de Emisión: {new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+            Generado: {new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 print:grid print:grid-cols-12 print:gap-6 gap-gutter">
-        {/* Left Column: Worker info card */}
-        <div className="col-span-12 md:col-span-4 print:col-span-4 flex flex-col gap-gutter text-left">
-          <div className="bg-white border border-outline-variant rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-4 border-b border-outline-variant/30 pb-4 mb-4">
-              <div className="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-lg">
-                {worker.first_name[0]}{worker.last_name[0]}
-              </div>
-              <div>
-                <h2 className="font-headline-sm text-headline-sm text-primary font-bold">{worker.first_name} {worker.last_name}</h2>
-                <p className="font-mono-data text-mono-data text-on-surface-variant font-bold text-xs mt-0.5">{worker.rut}</p>
-              </div>
+      {/* Worker Info Card - Full width horizontal card directly below company header */}
+      <div className="bg-white border border-outline-variant/60 rounded-xl p-5 mb-6 shadow-sm text-left w-full print:shadow-none print:mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-3 border-b border-outline-variant/30">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-base shrink-0">
+              {worker.first_name[0]}{worker.last_name[0]}
             </div>
-
-            <div className="flex flex-col gap-3 print:grid print:grid-cols-2 print:gap-x-8 print:gap-y-3">
-              <div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Empresa / Razón Social</span>
-                <p className="font-body-md text-body-md text-on-surface font-semibold">Enaex Servicios S.A.</p>
-                <p className="font-mono-data text-xs text-on-surface-variant font-bold">RUT: 76.041.871-4</p>
-              </div>
-              <div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Planta / Faena</span>
-                <p className="font-body-md text-body-md text-on-surface font-semibold">Enaex Planta Sierra Gorda</p>
-              </div>
-              <div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Cargo / Puesto</span>
-                <p className="font-body-md text-body-md text-on-surface font-semibold">{worker.cargo}</p>
-              </div>
-              <div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Departamento</span>
-                <p className="font-body-md text-body-md text-on-surface font-semibold">{worker.department}</p>
-              </div>
-              <div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Contacto</span>
-                <p className="font-body-md text-body-md text-on-surface font-semibold truncate" title={worker.email}>{worker.email}</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant font-semibold mt-0.5">{worker.phone}</p>
-              </div>
-              <div className="border-t border-outline-variant/30 pt-3 flex justify-between items-center mt-1 print:border-none print:pt-0 print:mt-0 print:flex-col print:items-start print:gap-1">
-                <span className="font-label-md text-label-md text-on-surface-variant text-[10px] uppercase font-semibold">Estado Operativo</span>
-                <span className={`font-label-md text-label-md px-2.5 py-0.5 rounded-full uppercase text-[10px] font-bold ${
-                  worker.status === 'Activo' ? 'bg-[#dcfce7] text-[#166534] border border-[#bbf7d0]' : 'bg-error-container text-on-error-container border border-error/20'
-                }`}>
-                  {worker.status}
-                </span>
-              </div>
+            <div>
+              <h2 className="font-headline-sm text-headline-sm text-primary font-bold">
+                {worker.first_name} {worker.last_name}
+              </h2>
+              <p className="font-mono-data text-on-surface font-bold text-xs mt-0.5">
+                RUT: {worker.rut}
+              </p>
             </div>
           </div>
-
-          {/* Mini Stats Grid */}
-          <div className="grid grid-cols-2 gap-4 print:hidden">
-            <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col justify-between h-24">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">EPP Entregados</span>
-              <span className="text-2xl font-bold text-primary block mt-1">{totalDelivered}</span>
-            </div>
-            <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col justify-between h-24">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Sol. Pendientes</span>
-              <span className={`text-2xl font-bold block mt-1 ${totalPending > 0 ? 'text-[#ea580c]' : 'text-on-surface-variant'}`}>{totalPending}</span>
-            </div>
-            <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col justify-between col-span-2 h-24">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Último Retiro Realizado</span>
-              <span className="text-sm font-semibold text-on-surface block mt-1 truncate">{lastDeliveryItem?.epp_item?.name || 'Ninguno'}</span>
-              <span className="text-[10px] text-on-surface-variant block mt-0.5">Fecha: {lastDeliveryDate}</span>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-on-surface-variant uppercase">Estado Operativo:</span>
+            <span className={`px-3 py-0.5 rounded-full uppercase text-[10px] font-bold ${
+              worker.status === 'Activo'
+                ? 'bg-[#dcfce7] text-[#166534] border border-[#bbf7d0]'
+                : 'bg-error-container text-on-error-container border border-error/20'
+            }`}>
+              {worker.status}
+            </span>
           </div>
         </div>
 
-        {/* Right Column: Deliveries History */}
-        <div className="col-span-12 md:col-span-8 print:col-span-8 flex flex-col gap-4 text-left">
-          <div className="bg-white border border-outline-variant rounded-xl p-5 shadow-sm flex flex-col flex-1 min-h-[400px]">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-outline-variant/30 pb-4 mb-4">
-              <h3 className="font-headline-sm text-headline-sm text-primary font-bold">Historial de Asignaciones y Entregas</h3>
-              
-              {/* Search History */}
-              <div className="relative w-full sm:w-64 print:hidden">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Buscar en el historial..."
-                  value={searchHistoryQuery}
-                  onChange={(e) => setSearchHistoryQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface focus:border-primary outline-none transition-colors h-8 text-left"
-                />
-              </div>
-            </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3">
+          <div>
+            <span className="font-label-md text-[10px] uppercase font-semibold text-on-surface-variant block">Cargo / Puesto</span>
+            <p className="font-body-md text-sm text-on-surface font-semibold mt-0.5">{worker.cargo}</p>
+          </div>
+          <div>
+            <span className="font-label-md text-[10px] uppercase font-semibold text-on-surface-variant block">Departamento</span>
+            <p className="font-body-md text-sm text-on-surface font-semibold mt-0.5">{worker.department}</p>
+          </div>
+          <div>
+            <span className="font-label-md text-[10px] uppercase font-semibold text-on-surface-variant block">Email Corporativo</span>
+            <p className="font-body-md text-sm text-on-surface font-semibold truncate mt-0.5" title={worker.email}>{worker.email}</p>
+          </div>
+          <div>
+            <span className="font-label-md text-[10px] uppercase font-semibold text-on-surface-variant block">Teléfono / Fono</span>
+            <p className="font-body-md text-sm text-on-surface font-semibold mt-0.5">{worker.phone}</p>
+          </div>
+        </div>
+      </div>
 
-            {/* Filters Bar - Visible on screen, hidden on print */}
-            <div className="bg-surface-container-low border border-outline-variant/60 rounded-xl p-4 mb-4 flex flex-col gap-4 print:hidden text-left">
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">Filtros de Historial</span>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Mini Stats Grid - Full Width */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 print:grid-cols-3 print:gap-4 print:mb-4">
+        <div className="bg-white border border-outline-variant/60 rounded-xl p-4 shadow-sm flex flex-col justify-between text-center print:shadow-none">
+          <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">EPPs Entregados</span>
+          <span className="text-2xl font-bold text-primary block mt-1">{totalDelivered}</span>
+        </div>
+        <div className="bg-white border border-outline-variant/60 rounded-xl p-4 shadow-sm flex flex-col justify-between text-center print:shadow-none">
+          <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Sol. Pendientes</span>
+          <span className={`text-2xl font-bold block mt-1 ${totalPending > 0 ? 'text-[#ea580c]' : 'text-on-surface-variant'}`}>{totalPending}</span>
+        </div>
+        <div className="bg-white border border-outline-variant/60 rounded-xl p-4 shadow-sm flex flex-col justify-between text-left print:shadow-none">
+          <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Último Retiro Realizado</span>
+          <span className="text-sm font-semibold text-on-surface block mt-1 truncate">{lastDeliveryItem?.epp_item?.name || 'Ninguno'}</span>
+          <span className="text-[10px] text-on-surface-variant block mt-0.5">Fecha: {lastDeliveryDate}</span>
+        </div>
+      </div>
+
+      {/* Deliveries History - Full Width */}
+      <div className="bg-white border border-outline-variant/60 rounded-xl p-5 shadow-sm flex flex-col w-full text-left print:shadow-none print:border-none print:p-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-outline-variant/30 pb-4 mb-4 print:hidden">
+          <h3 className="font-headline-sm text-headline-sm text-primary font-bold">Historial de Asignaciones y Entregas</h3>
+          
+          {/* Search History */}
+          <div className="relative w-full sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar en el historial..."
+              value={searchHistoryQuery}
+              onChange={(e) => setSearchHistoryQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface focus:border-primary outline-none transition-colors h-8 text-left"
+            />
+          </div>
+        </div>
+
+        {/* Filters Bar - Visible on screen, hidden on print */}
+        <div className="bg-surface-container-low border border-outline-variant/60 rounded-xl p-4 mb-4 flex flex-col gap-4 print:hidden text-left">
+          <span className="text-xs font-bold text-primary uppercase tracking-wider">Filtros de Historial</span>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Start Date */}
                 <div className="flex flex-col gap-1">
                   <label htmlFor="filter-start" className="text-[10px] font-bold text-on-surface-variant uppercase">Desde</label>
@@ -298,8 +296,8 @@ export const WorkerProfile: React.FC = () => {
               )}
             </div>
 
-            {/* Table Container - Desktop/Tablet */}
-            <div className="hidden sm:block overflow-x-auto">
+            {/* Table Container - Desktop/Tablet & Always in Print */}
+            <div className="hidden sm:block print:block overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>
                   <tr className="border-b border-outline-variant bg-surface-container-low/50">
@@ -421,8 +419,6 @@ export const WorkerProfile: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
-      </div>
     </div>
   );
 };
