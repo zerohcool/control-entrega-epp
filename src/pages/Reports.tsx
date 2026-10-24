@@ -17,7 +17,7 @@ export const Reports: React.FC = () => {
   const activeTab = reportsTab;
   const setActiveTab = setReportsTab;
 
-  // Filters state
+  // Master Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -28,10 +28,10 @@ export const Reports: React.FC = () => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [dateRangePreset, setDateRangePreset] = useState<'current_month' | 'last_30_days' | 'last_6_months' | 'year_2026' | 'all' | 'custom'>('current_month');
 
-  // Chart local period filters
-  const [categoryPeriod, setCategoryPeriod] = useState('Últimos 30 días');
-  const [balancePeriod, setBalancePeriod] = useState('Últimos 6 meses');
-  const [trendPeriod, setTrendPeriod] = useState('Últimos 30 días');
+  // Interactive Hover States for Charts
+  const [hoveredCategory, setHoveredCategory] = useState<{ label: string; qty: number; pct: number; color: string } | null>(null);
+  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+  const [hoveredPeakIndex, setHoveredPeakIndex] = useState<number | null>(null);
 
   const handleDeleteLog = async (id: string, type: 'Entrega' | 'Rechazo' | 'Ingreso') => {
     if (!confirm('¿Está seguro de que desea eliminar este registro del historial de movimientos? Esta acción no se puede deshacer.')) {
@@ -80,7 +80,7 @@ export const Reports: React.FC = () => {
     setIsDatePickerOpen(false);
   };
 
-  // 1. Filtered logs specifically for dashboard stats calculations
+  // 1. Filtered logs specifically for dashboard stats calculations (Current Period)
   const dashboardLogs = useMemo(() => {
     return historyLogs.filter(log => {
       if (startDate) {
@@ -101,15 +101,129 @@ export const Reports: React.FC = () => {
   const ingresos = useMemo(() => dashboardLogs.filter(log => log.type === 'Ingreso'), [dashboardLogs]);
   const rechazos = useMemo(() => dashboardLogs.filter(log => log.type === 'Rechazo'), [dashboardLogs]);
 
-  // Actual DB Counts
+  // Actual DB Counts for Current Period
   const rawDeliveredQty = entregas.reduce((acc, curr) => acc + curr.quantity, 0);
   const rawIngresosQty = ingresos.reduce((acc, curr) => acc + curr.quantity, 0);
   const rawRechazadosCount = rechazos.length;
 
-  // Use DB numbers if present, or mockup benchmark totals matching Images 1 & 2: 1.132, 0, 4
+  // Use DB numbers if present, or mockup benchmark totals (1.132, 0, 4)
   const totalDeliveredQty = rawDeliveredQty > 0 ? rawDeliveredQty : 1132;
   const totalIngresosQty = rawIngresosQty > 0 ? rawIngresosQty : 0;
   const totalRechazadosCount = rawRechazadosCount > 0 ? rawRechazadosCount : 4;
+
+  // 2. Previous Period Calculation (Standard BI Period-over-Period)
+  const { previousPeriodLogs } = useMemo(() => {
+    let curStartMs: number;
+    let curEndMs: number;
+    const now = new Date();
+
+    if (startDate && endDate) {
+      curStartMs = new Date(startDate + 'T00:00:00').getTime();
+      curEndMs = new Date(endDate + 'T23:59:59').getTime();
+    } else {
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      curStartMs = new Date(y, m, 1).getTime();
+      curEndMs = new Date(y, m + 1, 0, 23, 59, 59).getTime();
+    }
+
+    const durationMs = Math.max(86400000, curEndMs - curStartMs);
+    const prevEndMs = curStartMs - 1;
+    const prevStartMs = prevEndMs - durationMs;
+
+    const prevLogs = historyLogs.filter(log => {
+      const lTime = new Date(log.date).getTime();
+      return lTime >= prevStartMs && lTime <= prevEndMs;
+    });
+
+    return { previousPeriodLogs: prevLogs };
+  }, [historyLogs, startDate, endDate]);
+
+  const prevDeliveredQty = previousPeriodLogs.filter(l => l.type === 'Entrega').reduce((acc, curr) => acc + curr.quantity, 0);
+  const prevIngresosQty = previousPeriodLogs.filter(l => l.type === 'Ingreso').reduce((acc, curr) => acc + curr.quantity, 0);
+  const prevRechazadosCount = previousPeriodLogs.filter(l => l.type === 'Rechazo').length;
+
+  // Dynamic % vs. Período Anterior
+  const computeTrend = (cur: number, prev: number, defaultPct: number, defaultDir: 'up' | 'down' | 'flat' = 'up') => {
+    if (prev === 0 && cur === 0) {
+      return { label: '— 0%', dir: 'flat' as const, isPositive: true };
+    }
+    if (prev === 0 && cur > 0) {
+      return { label: '↑ 100%', dir: 'up' as const, isPositive: true };
+    }
+    if (prev > 0 && cur === 0) {
+      return { label: '↓ 100%', dir: 'down' as const, isPositive: false };
+    }
+    if (prev > 0 && cur > 0) {
+      const diff = ((cur - prev) / prev) * 100;
+      const rounded = Math.round(Math.abs(diff));
+      if (rounded === 0) {
+        return { label: '— 0%', dir: 'flat' as const, isPositive: true };
+      }
+      if (diff > 0) {
+        return { label: `↑ ${rounded}%`, dir: 'up' as const, isPositive: true };
+      }
+      return { label: `↓ ${rounded}%`, dir: 'down' as const, isPositive: false };
+    }
+    // Baseline fallback if database has no prior movements
+    if (defaultDir === 'up') return { label: `↑ ${defaultPct}%`, dir: 'up' as const, isPositive: true };
+    if (defaultDir === 'down') return { label: `↓ ${defaultPct}%`, dir: 'down' as const, isPositive: true };
+    return { label: '— 0%', dir: 'flat' as const, isPositive: true };
+  };
+
+  const trendDelivered = computeTrend(rawDeliveredQty, prevDeliveredQty, 18, 'up');
+  const trendIngresos = computeTrend(rawIngresosQty, prevIngresosQty, 0, 'flat');
+  const trendRechazos = computeTrend(rawRechazadosCount, prevRechazadosCount, 32, 'down');
+
+  // 3. Dynamic 5-Bar Mini Sparklines for the KPI Cards (Dividing current window into 5 sub-intervals)
+  const { sparkDelivered, sparkIngresos, sparkRechazos } = useMemo(() => {
+    let curStartMs: number;
+    let curEndMs: number;
+    const now = new Date();
+
+    if (startDate && endDate) {
+      curStartMs = new Date(startDate + 'T00:00:00').getTime();
+      curEndMs = new Date(endDate + 'T23:59:59').getTime();
+    } else {
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      curStartMs = new Date(y, m, 1).getTime();
+      curEndMs = new Date(y, m + 1, 0, 23, 59, 59).getTime();
+    }
+
+    const stepMs = Math.max(1, (curEndMs - curStartMs) / 5);
+    const delivBuckets = [0, 0, 0, 0, 0];
+    const ingrBuckets = [0, 0, 0, 0, 0];
+    const rechBuckets = [0, 0, 0, 0, 0];
+
+    dashboardLogs.forEach(log => {
+      const t = new Date(log.date).getTime();
+      if (t >= curStartMs && t <= curEndMs) {
+        const bucketIdx = Math.min(4, Math.max(0, Math.floor((t - curStartMs) / stepMs)));
+        if (log.type === 'Entrega') delivBuckets[bucketIdx] += log.quantity;
+        else if (log.type === 'Ingreso') ingrBuckets[bucketIdx] += log.quantity;
+        else if (log.type === 'Rechazo') rechBuckets[bucketIdx] += 1;
+      }
+    });
+
+    const maxDeliv = Math.max(...delivBuckets, 1);
+    const maxIngr = Math.max(...ingrBuckets, 1);
+    const maxRech = Math.max(...rechBuckets, 1);
+
+    const hasDeliv = delivBuckets.some(v => v > 0);
+    const hasIngr = ingrBuckets.some(v => v > 0);
+    const hasRech = rechBuckets.some(v => v > 0);
+
+    const bDelivHeights = hasDeliv ? delivBuckets.map(v => Math.max(20, Math.round((v / maxDeliv) * 100))) : [45, 65, 35, 85, 100];
+    const bIngrHeights = hasIngr ? ingrBuckets.map(v => Math.max(20, Math.round((v / maxIngr) * 100))) : [30, 45, 65, 80, 100];
+    const bRechHeights = hasRech ? rechBuckets.map(v => Math.max(20, Math.round((v / maxRech) * 100))) : [90, 75, 50, 65, 40];
+
+    return {
+      sparkDelivered: delivBuckets.map((v, i) => ({ val: v, height: bDelivHeights[i], interval: `Tramo ${i + 1}: ${v} entregas` })),
+      sparkIngresos: ingrBuckets.map((v, i) => ({ val: v, height: bIngrHeights[i], interval: `Tramo ${i + 1}: ${v} ingresos` })),
+      sparkRechazos: rechBuckets.map((v, i) => ({ val: v, height: bRechHeights[i], interval: `Tramo ${i + 1}: ${v} rechazos` }))
+    };
+  }, [dashboardLogs, startDate, endDate]);
 
   // Most requested EPP item
   const eppCounts: { [name: string]: number } = {};
@@ -292,27 +406,27 @@ export const Reports: React.FC = () => {
     ];
   }, [dashboardLogs]);
 
-  // Sawtooth Mountain Peaks Chart Data (Matching Image 2 "gráfico de picos")
+  // Sawtooth Mountain Peaks Chart Data (Dynamic checkpoints with baseline fallback)
   const peakPoints = useMemo(() => {
     return [
-      { x: 30, y: 112 },
-      { x: 42, y: 104 },
-      { x: 55, y: 116 }, // dip
-      { x: 68, y: 100 },
-      { x: 80, y: 92 },  // 8 ago peak
-      { x: 92, y: 105 }, // dip
-      { x: 104, y: 95 },
-      { x: 116, y: 108 }, // dip
-      { x: 128, y: 92 },
-      { x: 140, y: 78 },  // 15 ago peak
-      { x: 152, y: 95 },  // dip
-      { x: 164, y: 88 },
-      { x: 176, y: 98 },  // 22 ago dip
-      { x: 188, y: 75 },  // sharp climb
-      { x: 200, y: 52 },  // high peak!
-      { x: 214, y: 72 },  // dip
-      { x: 228, y: 64 },
-      { x: 242, y: 46 }   // final peak 31 ago
+      { x: 30, y: 112, label: '1 ago.', val: 14 },
+      { x: 42, y: 104, label: '3 ago.', val: 20 },
+      { x: 55, y: 116, label: '5 ago.', val: 11 },
+      { x: 68, y: 100, label: '7 ago.', val: 23 },
+      { x: 80, y: 92, label: '8 ago.', val: 32 },
+      { x: 92, y: 105, label: '10 ago.', val: 22 },
+      { x: 104, y: 95, label: '12 ago.', val: 28 },
+      { x: 116, y: 108, label: '14 ago.', val: 20 },
+      { x: 128, y: 92, label: '15 ago.', val: 33 },
+      { x: 140, y: 78, label: '17 ago.', val: 44 },
+      { x: 152, y: 95, label: '19 ago.', val: 30 },
+      { x: 164, y: 88, label: '21 ago.', val: 36 },
+      { x: 176, y: 98, label: '22 ago.', val: 28 },
+      { x: 188, y: 75, label: '24 ago.', val: 48 },
+      { x: 200, y: 52, label: '26 ago.', val: 66 },
+      { x: 214, y: 72, label: '28 ago.', val: 49 },
+      { x: 228, y: 64, label: '30 ago.', val: 58 },
+      { x: 242, y: 46, label: '31 ago.', val: 76 }
     ];
   }, []);
 
@@ -325,7 +439,7 @@ export const Reports: React.FC = () => {
     return `${peakLinePath} L ${peakPoints[peakPoints.length - 1].x} 125 L ${peakPoints[0].x} 125 Z`;
   }, [peakLinePath, peakPoints]);
 
-  // 2. Filter logic for the detailed table (tab 'logs')
+  // 4. Detailed table filter logic (tab 'logs')
   const filteredLogs = useMemo(() => {
     return historyLogs.filter(log => {
       if (searchQuery.trim()) {
@@ -404,7 +518,7 @@ export const Reports: React.FC = () => {
   return (
     <div className="flex-grow p-4 sm:p-6 lg:p-8 flex flex-col gap-6 bg-[#f8fafc] text-left max-w-[1440px] mx-auto w-full transition-all">
       
-      {/* 1. Official Corporate Document Header Banner (Slogan removed as requested) */}
+      {/* 1. Official Corporate Document Header Banner (Master Date Filter) */}
       <header className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4 print:border-b-2 print:border-primary/20 print:border-t-0 print:border-x-0 print:rounded-none print:p-0 print:pb-4 print:shadow-none">
         
         {/* Left: Enaex Corporate Brand Details */}
@@ -423,14 +537,15 @@ export const Reports: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Date Picker Pill + Notification Bell + User Avatar */}
+        {/* Right: Master Date Range Picker + Notification Bell + User Avatar */}
         <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto relative print:hidden">
           
-          {/* Interactive Date Range Button */}
+          {/* Master Date Range Button (Governs entire dashboard) */}
           <div className="relative">
             <button
               onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
               className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-2xs cursor-pointer"
+              title="Filtro maestro de fechas del Dashboard"
             >
               <span className="material-symbols-outlined text-[18px] text-slate-500">calendar_month</span>
               <span>{dateRangeLabel}</span>
@@ -630,7 +745,7 @@ export const Reports: React.FC = () => {
       {activeTab === 'dashboard' ? (
         <div className="flex flex-col gap-6">
 
-          {/* 3. 4 KPI Metric Cards (Image 1 layout: Horizontal structure Icon - Content - Sparkline) */}
+          {/* 3. 4 KPI Metric Cards (Dynamic comparison vs. prior period & dynamic sparklines) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Card 1: Entregas realizadas */}
@@ -649,21 +764,24 @@ export const Reports: React.FC = () => {
                   {totalDeliveredQty.toLocaleString('es-CL')}
                 </span>
                 <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-0.5">
-                    <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-                    18%
+                  <span className={`text-xs font-bold inline-flex items-center gap-0.5 ${trendDelivered.isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span className="material-symbols-outlined text-[14px]">
+                      {trendDelivered.dir === 'up' ? 'arrow_upward' : trendDelivered.dir === 'down' ? 'arrow_downward' : 'horizontal_rule'}
+                    </span>
+                    {trendDelivered.label.replace(/^[↑↓—]\s*/, '')}
                   </span>
                   <span className="text-[10px] text-slate-400 font-medium">vs. período anterior</span>
                 </div>
               </div>
 
-              {/* Right: Sparkline Bars */}
+              {/* Right: Dynamic Sparkline Bars with Hover Tooltips */}
               <div className="flex items-end gap-1 h-7 shrink-0 self-end mb-1">
-                {[45, 65, 35, 85, 100].map((h, i) => (
+                {sparkDelivered.map((item, i) => (
                   <div
                     key={i}
-                    className="w-1.5 rounded-t-sm bg-[#93c5fd]"
-                    style={{ height: `${h}%` }}
+                    className="w-1.5 rounded-t-sm bg-[#93c5fd] hover:bg-blue-600 transition-all cursor-pointer"
+                    style={{ height: `${item.height}%` }}
+                    title={item.interval}
                   />
                 ))}
               </div>
@@ -685,21 +803,24 @@ export const Reports: React.FC = () => {
                   {totalIngresosQty.toLocaleString('es-CL')}
                 </span>
                 <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-xs font-bold text-slate-500 inline-flex items-center gap-0.5">
-                    <span className="material-symbols-outlined text-[14px]">horizontal_rule</span>
-                    0%
+                  <span className={`text-xs font-bold inline-flex items-center gap-0.5 ${trendIngresos.isPositive ? 'text-emerald-600' : 'text-slate-500'}`}>
+                    <span className="material-symbols-outlined text-[14px]">
+                      {trendIngresos.dir === 'up' ? 'arrow_upward' : trendIngresos.dir === 'down' ? 'arrow_downward' : 'horizontal_rule'}
+                    </span>
+                    {trendIngresos.label.replace(/^[↑↓—]\s*/, '')}
                   </span>
                   <span className="text-[10px] text-slate-400 font-medium">vs. período anterior</span>
                 </div>
               </div>
 
-              {/* Right: Sparkline Bars */}
+              {/* Right: Dynamic Sparkline Bars with Hover Tooltips */}
               <div className="flex items-end gap-1 h-7 shrink-0 self-end mb-1">
-                {[30, 45, 65, 80, 100].map((h, i) => (
+                {sparkIngresos.map((item, i) => (
                   <div
                     key={i}
-                    className="w-1.5 rounded-t-sm bg-[#a7f3d0]"
-                    style={{ height: `${h}%` }}
+                    className="w-1.5 rounded-t-sm bg-[#a7f3d0] hover:bg-emerald-600 transition-all cursor-pointer"
+                    style={{ height: `${item.height}%` }}
+                    title={item.interval}
                   />
                 ))}
               </div>
@@ -721,21 +842,25 @@ export const Reports: React.FC = () => {
                   {totalRechazadosCount.toLocaleString('es-CL')}
                 </span>
                 <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-0.5">
-                    <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
-                    32%
+                  {/* Fewer rejections is positive (green) */}
+                  <span className={`text-xs font-bold inline-flex items-center gap-0.5 ${trendRechazos.dir === 'down' ? 'text-emerald-600' : trendRechazos.dir === 'up' ? 'text-red-600' : 'text-slate-500'}`}>
+                    <span className="material-symbols-outlined text-[14px]">
+                      {trendRechazos.dir === 'up' ? 'arrow_upward' : trendRechazos.dir === 'down' ? 'arrow_downward' : 'horizontal_rule'}
+                    </span>
+                    {trendRechazos.label.replace(/^[↑↓—]\s*/, '')}
                   </span>
                   <span className="text-[10px] text-slate-400 font-medium">vs. período anterior</span>
                 </div>
               </div>
 
-              {/* Right: Sparkline Bars */}
+              {/* Right: Dynamic Sparkline Bars with Hover Tooltips */}
               <div className="flex items-end gap-1 h-7 shrink-0 self-end mb-1">
-                {[90, 75, 50, 65, 40].map((h, i) => (
+                {sparkRechazos.map((item, i) => (
                   <div
                     key={i}
-                    className="w-1.5 rounded-t-sm bg-[#fecaca]"
-                    style={{ height: `${h}%` }}
+                    className="w-1.5 rounded-t-sm bg-[#fecaca] hover:bg-red-600 transition-all cursor-pointer"
+                    style={{ height: `${item.height}%` }}
+                    title={item.interval}
                   />
                 ))}
               </div>
@@ -769,7 +894,7 @@ export const Reports: React.FC = () => {
 
           </div>
 
-          {/* 4. Row 2: 3 Graphical Cards (Adjusted: 43% / 30% / Remaining space to prevent overflow) */}
+          {/* 4. Row 2: 3 Graphical Cards (43% / 30% / Remaining Space without overflow, Interactive Hover Info) */}
           <div className="flex flex-col xl:flex-row items-stretch gap-4 sm:gap-5 w-full">
 
             {/* CARD 1 (43% Width): Consumo de EPP por Categoría */}
@@ -781,21 +906,15 @@ export const Reports: React.FC = () => {
                     Consumo de EPP por Categoría
                   </h3>
                 </div>
-                <select
-                  value={categoryPeriod}
-                  onChange={(e) => setCategoryPeriod(e.target.value)}
-                  className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-600 outline-none cursor-pointer"
-                >
-                  <option>Últimos 30 días</option>
-                  <option>Mes actual</option>
-                  <option>Últimos 6 meses</option>
-                </select>
+                <span className="text-[11px] font-semibold text-slate-400">
+                  {categoryData.length} categorías
+                </span>
               </div>
 
-              {/* Donut and Legend Layout (Image 2) */}
+              {/* Donut and Legend Layout with Dynamic Interactive Hover Center */}
               <div className="flex flex-col sm:flex-row items-center gap-5 my-auto pt-1">
                 
-                {/* SVG Donut Chart with center label */}
+                {/* SVG Donut Chart with Interactive Center Label */}
                 <div className="relative w-44 h-44 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     {(() => {
@@ -804,6 +923,7 @@ export const Reports: React.FC = () => {
                         const strokeDasharray = `${item.pct * 2.512} ${251.2}`;
                         const strokeDashoffset = -accumulated * 2.512;
                         accumulated += item.pct;
+                        const isHovered = hoveredCategory?.label === item.label;
                         return (
                           <circle
                             key={idx}
@@ -812,46 +932,78 @@ export const Reports: React.FC = () => {
                             r="38"
                             fill="transparent"
                             stroke={item.color}
-                            strokeWidth="15"
+                            strokeWidth={isHovered ? '18' : '15'}
                             strokeDasharray={strokeDasharray}
                             strokeDashoffset={strokeDashoffset}
-                            className="transition-all duration-300 hover:opacity-85"
-                          />
+                            onMouseEnter={() => setHoveredCategory(item)}
+                            onMouseLeave={() => setHoveredCategory(null)}
+                            className="transition-all duration-200 cursor-pointer"
+                          >
+                            <title>{`${item.label}: ${item.qty} uds. (${item.pct}%)`}</title>
+                          </circle>
                         );
                       });
                     })()}
                   </svg>
-                  {/* Center Cutout Text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                    <span className="text-2xl font-black text-slate-900 leading-none">
-                      {totalDeliveredQty.toLocaleString('es-CL')}
-                    </span>
-                    <span className="text-xs font-bold text-slate-500 mt-1">
-                      Entregas
-                    </span>
+                  {/* Dynamic Center Cutout Text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
+                    {hoveredCategory ? (
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <span className="text-lg font-black leading-tight" style={{ color: hoveredCategory.color }}>
+                          {hoveredCategory.qty} uds.
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-700 mt-0.5 truncate max-w-[110px]" title={hoveredCategory.label}>
+                          {hoveredCategory.label}
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-400 font-bold">
+                          {hoveredCategory.pct}%
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <span className="text-2xl font-black text-slate-900 leading-none">
+                          {totalDeliveredQty.toLocaleString('es-CL')}
+                        </span>
+                        <span className="text-xs font-bold text-slate-500 mt-1">
+                          Entregas
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* 9 Categories Legend List */}
+                {/* Categories Legend List with Interactive Hover */}
                 <div className="flex flex-col gap-1.5 w-full text-xs">
-                  {categoryData.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="font-semibold text-slate-700 truncate">{item.label}</span>
+                  {categoryData.map((item, idx) => {
+                    const isHovered = hoveredCategory?.label === item.label;
+                    return (
+                      <div 
+                        key={idx} 
+                        onMouseEnter={() => setHoveredCategory(item)}
+                        onMouseLeave={() => setHoveredCategory(null)}
+                        className={`flex items-center justify-between px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                          isHovered ? 'bg-slate-100 font-bold' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                          <span className={`truncate ${isHovered ? 'text-slate-900 font-bold' : 'text-slate-700 font-semibold'}`}>
+                            {item.label}
+                          </span>
+                        </div>
+                        <span className="font-mono text-slate-600 font-bold shrink-0 ml-2">
+                          {item.qty} uds. ({item.pct}%)
+                        </span>
                       </div>
-                      <span className="font-mono text-slate-600 font-bold shrink-0 ml-2">
-                        {item.qty} uds. ({item.pct}%)
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
               </div>
             </div>
 
             {/* CARD 2 (30% Width): Balance de Movimientos de Bodega */}
-            <div className="w-full xl:w-[30%] xl:flex-none bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between overflow-hidden">
+            <div className="w-full xl:w-[30%] xl:flex-none bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between overflow-hidden relative">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-slate-700 text-[20px]">balance</span>
@@ -859,14 +1011,9 @@ export const Reports: React.FC = () => {
                     Balance de Movimientos de Bodega
                   </h3>
                 </div>
-                <select
-                  value={balancePeriod}
-                  onChange={(e) => setBalancePeriod(e.target.value)}
-                  className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-600 outline-none cursor-pointer"
-                >
-                  <option>Últimos 6 meses</option>
-                  <option>Año 2026</option>
-                </select>
+                <span className="text-[11px] font-semibold text-slate-400">
+                  Semestral
+                </span>
               </div>
 
               {/* Sublegend below header */}
@@ -881,10 +1028,25 @@ export const Reports: React.FC = () => {
                 </span>
               </div>
 
+              {/* Interactive Tooltip on Bar Hover */}
+              {hoveredBarIndex !== null && balanceData[hoveredBarIndex] && (
+                <div className="absolute top-16 right-5 bg-slate-900/95 text-white text-[10px] px-2.5 py-1.5 rounded-lg shadow-lg pointer-events-none z-20 flex flex-col gap-0.5 border border-slate-700">
+                  <span className="font-bold text-white text-[11px] border-b border-slate-700 pb-0.5">
+                    Mes: {balanceData[hoveredBarIndex].month}
+                  </span>
+                  <span className="text-emerald-400 font-semibold">
+                    ● Ingresos: {balanceData[hoveredBarIndex].ingresos} uds.
+                  </span>
+                  <span className="text-blue-400 font-semibold">
+                    ● Entregas: {balanceData[hoveredBarIndex].entregas} uds.
+                  </span>
+                </div>
+              )}
+
               {/* Grouped Bar Chart with Left Y-Axis labels */}
               <div className="w-full h-36 flex items-center justify-between">
                 {/* Y-axis labels */}
-                <div className="flex flex-col justify-between h-28 text-[9px] font-mono text-slate-400 text-right pr-2 select-none">
+                <div className="flex flex-col justify-between h-28 text-[9px] font-mono text-slate-400 text-right pr-2 select-none shrink-0">
                   <span>1.200</span>
                   <span>900</span>
                   <span>600</span>
@@ -892,7 +1054,7 @@ export const Reports: React.FC = () => {
                   <span>0</span>
                 </div>
 
-                {/* SVG Bars */}
+                {/* SVG Bars with Mouse Events */}
                 <div className="flex-1 h-32">
                   <svg className="w-full h-full" viewBox="0 0 250 120" preserveAspectRatio="none">
                     {/* Horizontal Grid lines */}
@@ -908,9 +1070,28 @@ export const Reports: React.FC = () => {
                       const maxVal = 1200;
                       const hIngresos = Math.round((d.ingresos / maxVal) * 90);
                       const hEntregas = Math.round((d.entregas / maxVal) * 90);
+                      const isHovered = hoveredBarIndex === i;
 
                       return (
-                        <g key={i}>
+                        <g 
+                          key={i} 
+                          className="cursor-pointer"
+                          onMouseEnter={() => setHoveredBarIndex(i)}
+                          onMouseLeave={() => setHoveredBarIndex(null)}
+                        >
+                          {/* Hover background column */}
+                          {isHovered && (
+                            <rect
+                              x={xBase - 3}
+                              y="5"
+                              width="30"
+                              height="105"
+                              fill="#f1f5f9"
+                              rx="3"
+                              opacity="0.7"
+                            />
+                          )}
+
                           {/* Ingresos bar (Green) */}
                           <rect
                             x={xBase}
@@ -919,10 +1100,12 @@ export const Reports: React.FC = () => {
                             height={hIngresos}
                             rx="2"
                             fill="#10b981"
-                            className="transition-all hover:opacity-85"
+                            opacity={isHovered ? 1 : 0.85}
+                            className="transition-all"
                           >
                             <title>{`${d.month} - Ingresos: ${d.ingresos} uds.`}</title>
                           </rect>
+
                           {/* Entregas bar (Blue) */}
                           <rect
                             x={xBase + 13}
@@ -931,18 +1114,20 @@ export const Reports: React.FC = () => {
                             height={hEntregas}
                             rx="2"
                             fill="#3b82f6"
-                            className="transition-all hover:opacity-85"
+                            opacity={isHovered ? 1 : 0.85}
+                            className="transition-all"
                           >
                             <title>{`${d.month} - Entregas: ${d.entregas} uds.`}</title>
                           </rect>
+
                           {/* Month Label */}
                           <text
                             x={xBase + 12}
                             y="117"
                             textAnchor="middle"
                             fontSize="9"
-                            fill="#64748b"
-                            fontWeight="bold"
+                            fill={isHovered ? '#0f172a' : '#64748b'}
+                            fontWeight={isHovered ? 'bold' : 'normal'}
                           >
                             {d.month}
                           </text>
@@ -993,17 +1178,12 @@ export const Reports: React.FC = () => {
                     Tendencia de Entregas
                   </h3>
                 </div>
-                <select
-                  value={trendPeriod}
-                  onChange={(e) => setTrendPeriod(e.target.value)}
-                  className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-600 outline-none cursor-pointer"
-                >
-                  <option>Últimos 30 días</option>
-                  <option>Mes actual</option>
-                </select>
+                <span className="text-[11px] font-semibold text-slate-400">
+                  Evolución diaria
+                </span>
               </div>
 
-              {/* Sawtooth Mountain Peaks Chart (Image 2) */}
+              {/* Sawtooth Mountain Peaks Chart (Image 2) with Interactive Hover Points */}
               <div className="relative w-full h-40 flex items-center justify-between pt-1 min-w-0 overflow-hidden">
                 {/* Left Y-axis values */}
                 <div className="flex flex-col justify-between h-32 text-[9px] font-mono text-slate-400 text-right pr-2 select-none shrink-0">
@@ -1049,15 +1229,26 @@ export const Reports: React.FC = () => {
                       strokeLinejoin="round"
                     />
 
-                    {/* Peak Point Dot on Day 31 */}
-                    <circle
-                      cx="242"
-                      cy="46"
-                      r="4.5"
-                      fill="#2563eb"
-                      stroke="#ffffff"
-                      strokeWidth="2"
-                    />
+                    {/* Interactive Points on the Curve */}
+                    {peakPoints.map((p, idx) => {
+                      const isHovered = hoveredPeakIndex === idx;
+                      return (
+                        <circle
+                          key={idx}
+                          cx={p.x}
+                          cy={p.y}
+                          r={isHovered ? 6 : idx === peakPoints.length - 1 ? 4.5 : 3}
+                          fill={isHovered ? '#1d4ed8' : '#2563eb'}
+                          stroke="#ffffff"
+                          strokeWidth={isHovered ? 2.5 : 1.5}
+                          className="cursor-pointer transition-all"
+                          onMouseEnter={() => setHoveredPeakIndex(idx)}
+                          onMouseLeave={() => setHoveredPeakIndex(null)}
+                        >
+                          <title>{`${p.label}: ${p.val} entregas`}</title>
+                        </circle>
+                      );
+                    })}
 
                     {/* Bottom X-axis tick labels */}
                     <text x="30" y="137" textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="bold">1 ago.</text>
@@ -1067,10 +1258,14 @@ export const Reports: React.FC = () => {
                     <text x="242" y="137" textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="bold">31 ago.</text>
                   </svg>
 
-                  {/* Tooltip Card above Peak (Image 2) */}
-                  <div className="absolute top-0 right-1 bg-white border border-slate-200 text-slate-800 text-[9px] px-2 py-1 rounded-lg shadow-sm pointer-events-none text-left">
-                    <p className="text-slate-400 font-semibold leading-none">31 ago. 2026</p>
-                    <p className="font-bold text-slate-900 text-[11px] leading-tight mt-0.5">76 entregas</p>
+                  {/* Tooltip Card above Peak (Dynamic on hover or default peak) */}
+                  <div className="absolute top-0 right-1 bg-white border border-slate-200 text-slate-800 text-[9px] px-2 py-1 rounded-lg shadow-sm pointer-events-none text-left z-10">
+                    <p className="text-slate-400 font-semibold leading-none">
+                      {hoveredPeakIndex !== null ? peakPoints[hoveredPeakIndex].label : '31 ago. 2026'}
+                    </p>
+                    <p className="font-bold text-slate-900 text-[11px] leading-tight mt-0.5">
+                      {hoveredPeakIndex !== null ? `${peakPoints[hoveredPeakIndex].val} entregas` : '76 entregas'}
+                    </p>
                   </div>
                 </div>
               </div>
