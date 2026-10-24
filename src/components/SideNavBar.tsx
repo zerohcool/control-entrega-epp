@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const SideNavBar: React.FC = () => {
-  const { activeView, navigate, logout, user, isMobileMenuOpen, setIsMobileMenuOpen, reportsTab, setReportsTab, setAlert, currentUserInfo } = useApp();
+  const { activeView, navigate, logout, user, isMobileMenuOpen, setIsMobileMenuOpen, reportsTab, setReportsTab, setAlert, currentUserInfo, refreshData } = useApp();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // If the user is not an admin, they shouldn't see this bar
@@ -51,6 +51,7 @@ export const SideNavBar: React.FC = () => {
           {/* 1. Dashboard */}
           <button
             onClick={() => {
+              refreshData();
               setReportsTab('dashboard');
               navigate('reports', null, 'dashboard');
             }}
@@ -66,7 +67,10 @@ export const SideNavBar: React.FC = () => {
 
           {/* 2. Solicitudes e Inventario */}
           <button
-            onClick={() => navigate('admin-dashboard')}
+            onClick={() => {
+              refreshData();
+              navigate('admin-dashboard');
+            }}
             className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               activeView === 'admin-dashboard'
                 ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
@@ -79,7 +83,10 @@ export const SideNavBar: React.FC = () => {
 
           {/* 3. Catálogo */}
           <button
-            onClick={() => navigate('catalog')}
+            onClick={() => {
+              refreshData();
+              navigate('catalog');
+            }}
             className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               activeView === 'catalog'
                 ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
@@ -92,7 +99,10 @@ export const SideNavBar: React.FC = () => {
 
           {/* 4. Personal / Proveedores */}
           <button
-            onClick={() => navigate('worker-search')}
+            onClick={() => {
+              refreshData();
+              navigate('worker-search');
+            }}
             className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               activeView === 'worker-search'
                 ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
@@ -106,6 +116,7 @@ export const SideNavBar: React.FC = () => {
           {/* 5. Reportes Históricos */}
           <button
             onClick={() => {
+              refreshData();
               setReportsTab('logs');
               navigate('reports', null, 'logs');
             }}
@@ -128,7 +139,10 @@ export const SideNavBar: React.FC = () => {
 
           {/* 6. Usuarios */}
           <button
-            onClick={() => navigate('worker-search')}
+            onClick={() => {
+              refreshData();
+              navigate('worker-search');
+            }}
             className="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold text-white/80 hover:bg-white/10 hover:text-white cursor-pointer"
           >
             <span className="material-symbols-outlined text-[20px]">manage_accounts</span>

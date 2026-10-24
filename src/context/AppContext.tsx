@@ -162,42 +162,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   }, []);
 
-  // 1. Auto-refresh whenever navigating to another section or tab
-  useEffect(() => {
-    if (user && activeView !== 'login') {
-      refreshData();
-    }
-  }, [activeView, reportsTab]);
-
-  // 2. Auto-refresh on window focus, tab visibility change, and periodic sync (every 15s)
-  useEffect(() => {
-    if (!user || activeView === 'login') return;
-
-    const handleFocus = () => {
-      refreshData();
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshData();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Silent background poll to detect newly incoming worker requests in real time
-    const pollInterval = setInterval(() => {
-      refreshData();
-    }, 15000);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(pollInterval);
-    };
-  }, [user, activeView]);
-
   useEffect(() => {
     try {
       if (user) {
