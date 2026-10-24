@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import type { ViewType } from '../context/AppContext';
 
 export const SideNavBar: React.FC = () => {
-  const { activeView, navigate, logout, user, isMobileMenuOpen, setIsMobileMenuOpen } = useApp();
+  const { activeView, navigate, logout, user, isMobileMenuOpen, setIsMobileMenuOpen, reportsTab, setReportsTab, setAlert } = useApp();
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // If the user is not an admin, they shouldn't see this bar
   if (user?.role !== 'admin') return null;
 
-  const menuItems: { view: ViewType; label: string; icon: string }[] = [
-    { view: 'admin-dashboard', label: 'Solicitudes e Inventario', icon: 'dashboard' },
-    { view: 'catalog', label: 'Catálogo', icon: 'widgets' },
-    { view: 'worker-search', label: 'Personal / Proveedores', icon: 'group' },
-    { view: 'reports', label: 'Reportes Históricos', icon: 'analytics' }
-  ];
+  const toggleDarkMode = () => {
+    const nextMode = !isDarkMode;
+    setIsDarkMode(nextMode);
+    if (nextMode) {
+      document.documentElement.classList.add('dark');
+      setAlert('Modo oscuro activado', 'success', 1500);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setAlert('Modo claro activado', 'success', 1500);
+    }
+  };
+
+  const isDashboardActive = activeView === 'reports' && reportsTab === 'dashboard';
+  const isLogsActive = activeView === 'reports' && reportsTab === 'logs';
 
   return (
     <>
@@ -25,56 +33,162 @@ export const SideNavBar: React.FC = () => {
         ></div>
       )}
 
-      <aside className={`fixed flex flex-col left-0 top-0 h-full w-[260px] bg-primary text-on-primary py-stack-lg border-r border-outline-variant/20 z-40 transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden`}>
+      <aside className={`fixed flex flex-col left-0 top-0 h-full w-[260px] bg-primary text-on-primary py-4 border-r border-outline-variant/20 z-40 transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden shadow-xl select-none`}>
         {/* Header Profile info */}
-        <div className="px-5 mb-6 flex flex-col gap-3">
+        <div className="px-5 mb-4 flex flex-col gap-2.5">
           <div className="flex justify-center items-center py-1">
             <img src="/Logo Enaex Letra Blanca.png" alt="Enaex Logo" className="h-9 object-contain" />
           </div>
-          <div className="text-center bg-primary-container/30 border border-outline-variant/20 rounded-lg p-2">
-            <p className="text-xs font-bold text-white tracking-wide uppercase">Enaex Servicios S.A.</p>
-            <p className="text-[10px] text-white/80 font-mono font-medium">RUT: 76.041.871-4</p>
-            <p className="text-[10px] text-secondary-fixed font-semibold mt-0.5">Enaex Planta Sierra Gorda</p>
-          </div>
-          <div className="flex items-center gap-3 border-t border-outline-variant/10 pt-3">
-            <div className="w-8 h-8 rounded bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-sm">
-              A
-            </div>
-            <div>
-              <h2 className="font-label-lg text-label-lg text-on-primary font-bold">Panel Administrativo</h2>
-              <p className="text-[10px] text-on-primary-container uppercase font-bold tracking-wider">Control Operativo</p>
-            </div>
+          <div className="text-center bg-white/5 border border-white/10 rounded-lg p-2.5">
+            <p className="text-xs font-extrabold text-white tracking-wider uppercase">Enaex Servicios S.A.</p>
+            <p className="text-[11px] text-white/70 font-mono font-medium mt-0.5">RUT: 76.041.871-4</p>
+            <p className="text-[10px] text-red-400 font-bold mt-1 tracking-tight">Enaex Planta Sierra Gorda</p>
           </div>
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 overflow-y-auto px-2 font-label-lg text-label-lg">
-          {menuItems.map((item) => {
-            const isActive = activeView === item.view;
-            return (
-              <button
-                key={item.view}
-                onClick={() => navigate(item.view)}
-                className={`w-full text-left mx-2 my-1 flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ease-in-out font-medium ${
-                  isActive
-                    ? 'bg-secondary-container text-on-secondary-container'
-                    : 'text-on-primary-container hover:bg-primary-container/50 hover:text-white'
-                }`}
-              >
-                <span className="material-symbols-outlined">{item.icon}</span>
-                {item.label}
-              </button>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto px-3 space-y-1 font-label-md text-sm">
+          {/* 1. Dashboard */}
+          <button
+            onClick={() => {
+              setReportsTab('dashboard');
+              navigate('reports', null, 'dashboard');
+            }}
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+              isDashboardActive
+                ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">space_dashboard</span>
+            Dashboard
+          </button>
+
+          {/* 2. Solicitudes e Inventario */}
+          <button
+            onClick={() => navigate('admin-dashboard')}
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+              activeView === 'admin-dashboard'
+                ? 'bg-white/20 text-white font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">inventory_2</span>
+            Solicitudes e Inventario
+          </button>
+
+          {/* 3. Catálogo */}
+          <button
+            onClick={() => navigate('catalog')}
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+              activeView === 'catalog'
+                ? 'bg-white/20 text-white font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">widgets</span>
+            Catálogo
+          </button>
+
+          {/* 4. Personal / Proveedores */}
+          <button
+            onClick={() => navigate('worker-search')}
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+              activeView === 'worker-search'
+                ? 'bg-white/20 text-white font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">group</span>
+            Personal / Proveedores
+          </button>
+
+          {/* 5. Reportes Históricos */}
+          <button
+            onClick={() => {
+              setReportsTab('logs');
+              navigate('reports', null, 'logs');
+            }}
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+              isLogsActive
+                ? 'bg-white/20 text-white font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">analytics</span>
+            Reportes Históricos
+          </button>
+
+          {/* Subheader: CONFIGURACIÓN */}
+          <div className="pt-4 pb-1 px-3">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/40">
+              Configuración
+            </span>
+          </div>
+
+          {/* 6. Usuarios */}
+          <button
+            onClick={() => navigate('worker-search')}
+            className="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold text-white/80 hover:bg-white/10 hover:text-white cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
+            Usuarios
+          </button>
+
+          {/* 7. Parámetros */}
+          <button
+            onClick={() => {
+              setAlert('Parámetros del Sistema: Enaex v2.0.0 (Faena Planta Sierra Gorda)', 'success', 3000);
+            }}
+            className="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold text-white/80 hover:bg-white/10 hover:text-white cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[20px]">tune</span>
+            Parámetros
+          </button>
         </nav>
 
-        {/* Footer Navigation */}
-        <div className="mt-auto px-2 border-t border-outline-variant/20 pt-4 font-label-lg text-label-lg">
+        {/* Footer Navigation: User Info + Dark Mode + Logout */}
+        <div className="mt-auto px-4 pt-3 border-t border-white/10 flex flex-col gap-3">
+          {/* User Profile Pill */}
+          <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-2.5">
+            <div className="w-9 h-9 rounded-full bg-[#ea000c] text-white flex items-center justify-center font-bold text-xs ring-2 ring-white/20 shrink-0">
+              AA
+            </div>
+            <div className="overflow-hidden text-left">
+              <p className="text-xs font-bold text-white truncate">Andrés Alquinta</p>
+              <p className="text-[10px] text-white/60 truncate font-medium">Encargado Administrativo</p>
+            </div>
+          </div>
+
+          {/* Dark Mode Toggle Switch */}
+          <div className="flex items-center justify-between px-2 py-1 text-white/80">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px]">
+                {isDarkMode ? 'dark_mode' : 'light_mode'}
+              </span>
+              <span className="text-xs font-medium">Modo oscuro</span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className={`w-10 h-5 rounded-full transition-colors relative focus:outline-none cursor-pointer ${
+                isDarkMode ? 'bg-[#ea000c]' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                  isDarkMode ? 'transform translate-x-5' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Logout Button */}
           <button
             onClick={() => logout()}
-            className="w-full text-left mx-2 my-1 flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-950/20 transition-all duration-200 ease-in-out font-medium"
+            className="w-full text-left flex items-center gap-3 px-3.5 py-2 rounded-lg text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-all duration-200 font-semibold text-xs cursor-pointer"
           >
-            <span className="material-symbols-outlined">logout</span>
+            <span className="material-symbols-outlined text-[18px]">logout</span>
             Cerrar Sesión
           </button>
         </div>

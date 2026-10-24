@@ -32,7 +32,9 @@ interface AppContextType {
   loginAsAdmin: (username: string, password_hash: string) => boolean;
   loginAsWorker: (rut: string) => boolean;
   logout: () => void;
-  navigate: (view: ViewType, workerId?: string | null) => void;
+  navigate: (view: ViewType, workerId?: string | null, targetReportsTab?: 'dashboard' | 'logs') => void;
+  reportsTab: 'dashboard' | 'logs';
+  setReportsTab: (tab: 'dashboard' | 'logs') => void;
   addToCart: (item: EPPItem, quantity: number) => void;
   removeFromCart: (itemId: string) => void;
   updateCartQuantity: (itemId: string, quantity: number) => void;
@@ -78,6 +80,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [alertNotification, setAlertNotification] = useState<AlertNotification | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [reportsTab, setReportsTab] = useState<'dashboard' | 'logs'>('dashboard');
 
   // Request Submission loaders
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -172,10 +175,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAlert('Sesión cerrada con éxito', 'success');
   };
 
-  const navigate = (view: ViewType, workerId?: string | null) => {
+  const navigate = (view: ViewType, workerId?: string | null, targetReportsTab?: 'dashboard' | 'logs') => {
     setActiveView(view);
     if (workerId !== undefined) {
       setSelectedWorkerId(workerId);
+    }
+    if (targetReportsTab !== undefined) {
+      setReportsTab(targetReportsTab);
     }
     setIsMobileMenuOpen(false); // Close menu on navigation
   };
@@ -485,7 +491,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registerAdmin,
       updateAdmin,
       deleteAdmin,
-      deleteHistoryRecord
+      deleteHistoryRecord,
+      reportsTab,
+      setReportsTab
     }}>
       {children}
     </AppContext.Provider>
