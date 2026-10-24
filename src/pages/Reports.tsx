@@ -214,8 +214,38 @@ export const Reports: React.FC = () => {
     return merged.slice(0, 10);
   }, [workerCounts]);
 
-  // Categories Breakdown Data (Matching Image 2 exactly)
+  // Categories Breakdown Data (Dynamic from filtered entregas with baseline fallback)
   const categoryData = useMemo(() => {
+    const counts: { [category: string]: number } = {};
+    entregas.forEach(log => {
+      counts[log.category] = (counts[log.category] || 0) + log.quantity;
+    });
+
+    const categoryColors: { [key: string]: string } = {
+      'Protección Manos': '#3b82f6',
+      'Otros': '#fed7aa',
+      'Protección Respiratoria': '#10b981',
+      'Protección Visual': '#facc15',
+      'Protección Piel': '#db2777',
+      'Protección Auditiva': '#e11d48',
+      'Ropa Seguridad': '#dc2626',
+      'Protección Cabeza': '#f97316',
+      'Protección Alturas': '#14b8a6'
+    };
+
+    const palette = ['#3b82f6', '#fed7aa', '#10b981', '#facc15', '#db2777', '#e11d48', '#dc2626', '#f97316', '#14b8a6', '#6366f1'];
+
+    if (Object.keys(counts).length > 0) {
+      const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      return sorted.map(([cat, qty], idx) => ({
+        label: cat,
+        qty,
+        pct: Math.round((qty / total) * 100),
+        color: categoryColors[cat] || palette[idx % palette.length]
+      }));
+    }
+
     return [
       { label: 'Protección Manos', qty: 587, pct: 52, color: '#3b82f6' },
       { label: 'Otros', qty: 201, pct: 18, color: '#fed7aa' },
@@ -227,10 +257,31 @@ export const Reports: React.FC = () => {
       { label: 'Protección Cabeza', qty: 13, pct: 1, color: '#f97316' },
       { label: 'Protección Alturas', qty: 3, pct: 0, color: '#14b8a6' }
     ];
-  }, []);
+  }, [entregas]);
 
-  // Balance Chart Data (Matching Image 2: 6 Months)
+  // Balance Chart Data (Dynamic by month from dashboardLogs with baseline fallback)
   const balanceData = useMemo(() => {
+    const monthsMap: { [month: string]: { month: string; ingresos: number; entregas: number } } = {};
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+    dashboardLogs.forEach(log => {
+      const d = new Date(log.date);
+      const mName = monthNames[d.getMonth()];
+      if (!monthsMap[mName]) {
+        monthsMap[mName] = { month: mName, ingresos: 0, entregas: 0 };
+      }
+      if (log.type === 'Ingreso') {
+        monthsMap[mName].ingresos += log.quantity;
+      } else if (log.type === 'Entrega') {
+        monthsMap[mName].entregas += log.quantity;
+      }
+    });
+
+    const realMonths = Object.values(monthsMap);
+    if (realMonths.length >= 2) {
+      return realMonths.slice(-6);
+    }
+
     return [
       { month: 'Mar', ingresos: 300, entregas: 420 },
       { month: 'Abr', ingresos: 520, entregas: 390 },
@@ -239,7 +290,7 @@ export const Reports: React.FC = () => {
       { month: 'Jul', ingresos: 520, entregas: 820 },
       { month: 'Ago', ingresos: 460, entregas: 1100 }
     ];
-  }, []);
+  }, [dashboardLogs]);
 
   // Sawtooth Mountain Peaks Chart Data (Matching Image 2 "gráfico de picos")
   const peakPoints = useMemo(() => {
@@ -718,11 +769,11 @@ export const Reports: React.FC = () => {
 
           </div>
 
-          {/* 4. Row 2: 3 Graphical Cards (Image 2 layout: 45% / 30% / 25% horizontal width distribution) */}
+          {/* 4. Row 2: 3 Graphical Cards (Adjusted: 43% / 30% / Remaining space to prevent overflow) */}
           <div className="flex flex-col xl:flex-row items-stretch gap-4 sm:gap-5 w-full">
 
-            {/* CARD 1 (45% Width): Consumo de EPP por Categoría */}
-            <div className="w-full xl:w-[45%] bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between shrink-0">
+            {/* CARD 1 (43% Width): Consumo de EPP por Categoría */}
+            <div className="w-full xl:w-[43%] xl:flex-none bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-slate-700 text-[20px]">donut_small</span>
@@ -800,7 +851,7 @@ export const Reports: React.FC = () => {
             </div>
 
             {/* CARD 2 (30% Width): Balance de Movimientos de Bodega */}
-            <div className="w-full xl:w-[30%] bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between shrink-0">
+            <div className="w-full xl:w-[30%] xl:flex-none bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-slate-700 text-[20px]">balance</span>
@@ -933,8 +984,8 @@ export const Reports: React.FC = () => {
               </div>
             </div>
 
-            {/* CARD 3 (25% Width): Tendencia de Entregas (Sawtooth Peaks Chart) */}
-            <div className="w-full xl:w-[25%] bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between shrink-0">
+            {/* CARD 3: Tendencia de Entregas (Sawtooth Peaks Chart, fills remaining space flush to right margin) */}
+            <div className="w-full xl:flex-1 min-w-0 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-slate-700 text-[20px]">trending_up</span>
@@ -953,9 +1004,9 @@ export const Reports: React.FC = () => {
               </div>
 
               {/* Sawtooth Mountain Peaks Chart (Image 2) */}
-              <div className="relative w-full h-40 flex items-center justify-between pt-1">
+              <div className="relative w-full h-40 flex items-center justify-between pt-1 min-w-0 overflow-hidden">
                 {/* Left Y-axis values */}
-                <div className="flex flex-col justify-between h-32 text-[9px] font-mono text-slate-400 text-right pr-2 select-none">
+                <div className="flex flex-col justify-between h-32 text-[9px] font-mono text-slate-400 text-right pr-2 select-none shrink-0">
                   <span>100</span>
                   <span>80</span>
                   <span>60</span>
@@ -965,8 +1016,8 @@ export const Reports: React.FC = () => {
                 </div>
 
                 {/* SVG Sawtooth Area and Line */}
-                <div className="flex-1 h-36 relative">
-                  <svg className="w-full h-full" viewBox="0 0 270 140" preserveAspectRatio="none">
+                <div className="flex-1 h-36 relative min-w-0 overflow-hidden">
+                  <svg className="w-full h-full min-w-0" viewBox="0 0 270 140" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="peakGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.45" />

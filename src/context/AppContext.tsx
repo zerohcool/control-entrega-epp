@@ -83,9 +83,38 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserSession | null>(null);
-  const [activeView, setActiveView] = useState<ViewType>('login');
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [user, setUser] = useState<UserSession | null>(() => {
+    try {
+      const saved = localStorage.getItem('epp_user_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [activeView, setActiveView] = useState<ViewType>(() => {
+    try {
+      const saved = localStorage.getItem('epp_user_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.role === 'admin' ? 'reports' : 'worker-profile';
+      }
+      return 'login';
+    } catch {
+      return 'login';
+    }
+  });
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem('epp_user_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.workerId || null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
   const [cart, setCart] = useState<CartItem[]>([]);
   const [alertNotification, setAlertNotification] = useState<AlertNotification | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -133,25 +162,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   }, []);
 
+  useEffect(() => {
+    try {
+      if (user) {
+        localStorage.setItem('epp_user_session', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('epp_user_session');
+      }
+    } catch (e) {
+      console.error('Error saving session', e);
+    }
+  }, [user]);
+
   const pendingDeliveriesCount = deliveries.filter(d => d.status === 'Pendiente').length;
 
   const currentUserInfo: CurrentUserInfo = React.useMemo(() => {
     if (user?.role === 'admin') {
       const admin = admins.find(a => a.username.toLowerCase() === user.username?.toLowerCase());
       if (admin) {
-        const fName = admin.first_name || '';
-        const lName = admin.last_name || '';
-        const initials = `${fName[0] || ''}${lName[0] || ''}`.toUpperCase() || admin.username.slice(0, 2).toUpperCase();
+        let fName = admin.first_name || '';
+        let lName = admin.last_name || '';
+        if (fName.toLowerCase() === 'administrador' && lName.toLowerCase() === 'principal') {
+          fName = 'Andrés';
+          lName = 'Alquinta';
+        }
+        const initials = `${fName[0] || ''}${lName[0] || ''}`.toUpperCase() || 'AA';
         return {
-          fullName: `${fName} ${lName}`.trim() || admin.username,
+          fullName: `${fName} ${lName}`.trim() || 'Andrés Alquinta',
           initials,
           role: 'Encargado Administrativo',
           email: admin.email
         };
       }
       return {
-        fullName: user.username || 'Administrador',
-        initials: (user.username?.slice(0, 2) || 'AD').toUpperCase(),
+        fullName: user.username?.toLowerCase() === 'admin' ? 'Andrés Alquinta' : user.username || 'Andrés Alquinta',
+        initials: user.username?.toLowerCase() === 'admin' ? 'AA' : (user.username?.slice(0, 2) || 'AA').toUpperCase(),
         role: 'Encargado Administrativo'
       };
     } else if (user?.role === 'worker') {

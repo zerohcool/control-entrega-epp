@@ -54,10 +54,10 @@ export const SideNavBar: React.FC = () => {
               setReportsTab('dashboard');
               navigate('reports', null, 'dashboard');
             }}
-            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               isDashboardActive
                 ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
-                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                : 'text-white/80 hover:bg-white/10 hover:text-white font-semibold'
             }`}
           >
             <span className="material-symbols-outlined text-[20px]">space_dashboard</span>
@@ -67,10 +67,10 @@ export const SideNavBar: React.FC = () => {
           {/* 2. Solicitudes e Inventario */}
           <button
             onClick={() => navigate('admin-dashboard')}
-            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               activeView === 'admin-dashboard'
-                ? 'bg-white/20 text-white font-bold'
-                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white font-semibold'
             }`}
           >
             <span className="material-symbols-outlined text-[20px]">inventory_2</span>
@@ -80,10 +80,10 @@ export const SideNavBar: React.FC = () => {
           {/* 3. Catálogo */}
           <button
             onClick={() => navigate('catalog')}
-            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               activeView === 'catalog'
-                ? 'bg-white/20 text-white font-bold'
-                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white font-semibold'
             }`}
           >
             <span className="material-symbols-outlined text-[20px]">widgets</span>
@@ -93,10 +93,10 @@ export const SideNavBar: React.FC = () => {
           {/* 4. Personal / Proveedores */}
           <button
             onClick={() => navigate('worker-search')}
-            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               activeView === 'worker-search'
-                ? 'bg-white/20 text-white font-bold'
-                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white font-semibold'
             }`}
           >
             <span className="material-symbols-outlined text-[20px]">group</span>
@@ -109,10 +109,10 @@ export const SideNavBar: React.FC = () => {
               setReportsTab('logs');
               navigate('reports', null, 'logs');
             }}
-            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+            className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
               isLogsActive
-                ? 'bg-white/20 text-white font-bold'
-                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                ? 'bg-[#ea000c] text-white shadow-md shadow-red-900/30 font-bold'
+                : 'text-white/80 hover:bg-white/10 hover:text-white font-semibold'
             }`}
           >
             <span className="material-symbols-outlined text-[20px]">analytics</span>
@@ -133,17 +133,6 @@ export const SideNavBar: React.FC = () => {
           >
             <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
             Usuarios
-          </button>
-
-          {/* 7. Parámetros */}
-          <button
-            onClick={() => {
-              setAlert('Parámetros del Sistema: Enaex v2.0.0 (Faena Planta Sierra Gorda)', 'success', 3000);
-            }}
-            className="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 font-semibold text-white/80 hover:bg-white/10 hover:text-white cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[20px]">tune</span>
-            Parámetros
           </button>
         </nav>
 

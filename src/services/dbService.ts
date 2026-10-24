@@ -273,9 +273,9 @@ const DEFAULT_ADMINS: AdminUser[] = [
   {
     id: '33333333-3333-3333-3333-333333333301',
     username: 'admin',
-    first_name: 'Administrador',
-    last_name: 'Principal',
-    email: 'admin@eppcontrol.cl',
+    first_name: 'Andrés',
+    last_name: 'Alquinta',
+    email: 'andres.alquinta@enaex.com',
     password_hash: '123456',
     created_at: new Date(2023, 1, 1).toISOString()
   },
