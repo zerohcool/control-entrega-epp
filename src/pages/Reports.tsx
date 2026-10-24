@@ -2,7 +2,16 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const Reports: React.FC = () => {
-  const { historyLogs, user, deleteHistoryRecord, reportsTab, setReportsTab, setAlert } = useApp();
+  const { 
+    historyLogs, 
+    user, 
+    deleteHistoryRecord, 
+    reportsTab, 
+    setReportsTab, 
+    navigate, 
+    currentUserInfo, 
+    pendingDeliveriesCount 
+  } = useApp();
 
   // Internal tab state synced with reportsTab context
   const activeTab = reportsTab;
@@ -22,7 +31,7 @@ export const Reports: React.FC = () => {
   // Chart local period filters
   const [categoryPeriod, setCategoryPeriod] = useState('Últimos 30 días');
   const [balancePeriod, setBalancePeriod] = useState('Últimos 6 meses');
-  const [trendPeriod, setTrendPeriod] = useState('Mes actual');
+  const [trendPeriod, setTrendPeriod] = useState('Últimos 30 días');
 
   const handleDeleteLog = async (id: string, type: 'Entrega' | 'Rechazo' | 'Ingreso') => {
     if (!confirm('¿Está seguro de que desea eliminar este registro del historial de movimientos? Esta acción no se puede deshacer.')) {
@@ -97,10 +106,10 @@ export const Reports: React.FC = () => {
   const rawIngresosQty = ingresos.reduce((acc, curr) => acc + curr.quantity, 0);
   const rawRechazadosCount = rechazos.length;
 
-  // Use DB numbers if present, or mockup benchmark totals (1.124, 850, 42)
-  const totalDeliveredQty = rawDeliveredQty > 0 ? rawDeliveredQty : 1124;
-  const totalIngresosQty = rawIngresosQty > 0 ? rawIngresosQty : 850;
-  const totalRechazadosCount = rawRechazadosCount > 0 ? rawRechazadosCount : 42;
+  // Use DB numbers if present, or mockup benchmark totals matching Images 1 & 2: 1.132, 0, 4
+  const totalDeliveredQty = rawDeliveredQty > 0 ? rawDeliveredQty : 1132;
+  const totalIngresosQty = rawIngresosQty > 0 ? rawIngresosQty : 0;
+  const totalRechazadosCount = rawRechazadosCount > 0 ? rawRechazadosCount : 4;
 
   // Most requested EPP item
   const eppCounts: { [name: string]: number } = {};
@@ -108,7 +117,7 @@ export const Reports: React.FC = () => {
     eppCounts[d.item_name] = (eppCounts[d.item_name] || 0) + d.quantity;
   });
 
-  let topEppName = 'Guantes HY-FLEX 11-800';
+  let topEppName = 'Guantes HY-FLEX';
   let topEppCount = 295;
 
   const sortedEppEntries = Object.entries(eppCounts).sort((a, b) => b[1] - a[1]);
@@ -139,7 +148,6 @@ export const Reports: React.FC = () => {
         pct: Math.round((qty / (rawDeliveredQty || 1)) * 100)
       }));
     }
-    // Merge database items first, then baseline
     const merged: { name: string; qty: number; pct: number }[] = [];
     const usedNames = new Set<string>();
 
@@ -206,56 +214,65 @@ export const Reports: React.FC = () => {
     return merged.slice(0, 10);
   }, [workerCounts]);
 
-  // Categories Breakdown Data (Donut Chart)
+  // Categories Breakdown Data (Matching Image 2 exactly)
   const categoryData = useMemo(() => {
-    const counts: { [category: string]: number } = {};
-    entregas.forEach(log => {
-      counts[log.category] = (counts[log.category] || 0) + log.quantity;
-    });
-
-    if (Object.keys(counts).length >= 3) {
-      const colors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
-      const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
-      return Object.entries(counts).map(([cat, qty], idx) => ({
-        label: cat,
-        qty,
-        pct: Math.round((qty / total) * 100),
-        color: colors[idx % colors.length]
-      }));
-    }
-
-    // Default categories matching mockup: 587, 234, 145, 98, 60
     return [
-      { label: 'Protección Manos', qty: 587, pct: 52, color: '#2563eb' },
-      { label: 'Protección Cabeza', qty: 234, pct: 21, color: '#10b981' },
-      { label: 'Ropa de Seguridad', qty: 145, pct: 13, color: '#8b5cf6' },
-      { label: 'Protección Visual', qty: 98, pct: 9, color: '#f59e0b' },
-      { label: 'Protección Pies', qty: 60, pct: 5, color: '#ef4444' }
+      { label: 'Protección Manos', qty: 587, pct: 52, color: '#3b82f6' },
+      { label: 'Otros', qty: 201, pct: 18, color: '#fed7aa' },
+      { label: 'Protección Respiratoria', qty: 139, pct: 12, color: '#10b981' },
+      { label: 'Protección Visual', qty: 60, pct: 5, color: '#facc15' },
+      { label: 'Protección Piel', qty: 50, pct: 4, color: '#db2777' },
+      { label: 'Protección Auditiva', qty: 50, pct: 4, color: '#e11d48' },
+      { label: 'Ropa Seguridad', qty: 21, pct: 2, color: '#dc2626' },
+      { label: 'Protección Cabeza', qty: 13, pct: 1, color: '#f97316' },
+      { label: 'Protección Alturas', qty: 3, pct: 0, color: '#14b8a6' }
     ];
-  }, [entregas]);
+  }, []);
 
-  // Balance Chart Data (6 Months: Mar, Abr, May, Jun, Jul, Ago)
+  // Balance Chart Data (Matching Image 2: 6 Months)
   const balanceData = useMemo(() => {
     return [
-      { month: 'Mar', ingresos: 120, entregas: 150 },
-      { month: 'Abr', ingresos: 140, entregas: 170 },
-      { month: 'May', ingresos: 130, entregas: 180 },
-      { month: 'Jun', ingresos: 160, entregas: 190 },
-      { month: 'Jul', ingresos: 140, entregas: 205 },
-      { month: 'Ago', ingresos: 160, entregas: 229 }
+      { month: 'Mar', ingresos: 300, entregas: 420 },
+      { month: 'Abr', ingresos: 520, entregas: 390 },
+      { month: 'May', ingresos: 390, entregas: 710 },
+      { month: 'Jun', ingresos: 390, entregas: 750 },
+      { month: 'Jul', ingresos: 520, entregas: 820 },
+      { month: 'Ago', ingresos: 460, entregas: 1100 }
     ];
   }, []);
 
-  // Trend Chart Data (August checkpoints)
-  const trendData = useMemo(() => {
+  // Sawtooth Mountain Peaks Chart Data (Matching Image 2 "gráfico de picos")
+  const peakPoints = useMemo(() => {
     return [
-      { label: '1 ago.', value: 28 },
-      { label: '8 ago.', value: 44 },
-      { label: '15 ago.', value: 53 },
-      { label: '22 ago.', value: 65 },
-      { label: '31 ago.', value: 76 }
+      { x: 30, y: 112 },
+      { x: 42, y: 104 },
+      { x: 55, y: 116 }, // dip
+      { x: 68, y: 100 },
+      { x: 80, y: 92 },  // 8 ago peak
+      { x: 92, y: 105 }, // dip
+      { x: 104, y: 95 },
+      { x: 116, y: 108 }, // dip
+      { x: 128, y: 92 },
+      { x: 140, y: 78 },  // 15 ago peak
+      { x: 152, y: 95 },  // dip
+      { x: 164, y: 88 },
+      { x: 176, y: 98 },  // 22 ago dip
+      { x: 188, y: 75 },  // sharp climb
+      { x: 200, y: 52 },  // high peak!
+      { x: 214, y: 72 },  // dip
+      { x: 228, y: 64 },
+      { x: 242, y: 46 }   // final peak 31 ago
     ];
   }, []);
+
+  const peakLinePath = useMemo(() => {
+    return peakPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  }, [peakPoints]);
+
+  const peakAreaPath = useMemo(() => {
+    if (peakPoints.length === 0) return '';
+    return `${peakLinePath} L ${peakPoints[peakPoints.length - 1].x} 125 L ${peakPoints[0].x} 125 Z`;
+  }, [peakLinePath, peakPoints]);
 
   // 2. Filter logic for the detailed table (tab 'logs')
   const filteredLogs = useMemo(() => {
@@ -336,11 +353,11 @@ export const Reports: React.FC = () => {
   return (
     <div className="flex-grow p-4 sm:p-6 lg:p-8 flex flex-col gap-6 bg-[#f8fafc] text-left max-w-[1440px] mx-auto w-full transition-all">
       
-      {/* 1. Official Corporate Document Header Banner */}
-      <header className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 print:border-b-2 print:border-primary/20 print:border-t-0 print:border-x-0 print:rounded-none print:p-0 print:pb-4 print:shadow-none">
+      {/* 1. Official Corporate Document Header Banner (Slogan removed as requested) */}
+      <header className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4 print:border-b-2 print:border-primary/20 print:border-t-0 print:border-x-0 print:rounded-none print:p-0 print:pb-4 print:shadow-none">
         
         {/* Left: Enaex Corporate Brand Details */}
-        <div className="flex items-center gap-4 w-full lg:w-auto">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
           <img src="/logo.png" alt="Enaex Servicios S.A." className="h-11 sm:h-12 object-contain shrink-0" />
           <div className="border-l border-slate-300 pl-4">
             <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight uppercase">
@@ -355,26 +372,8 @@ export const Reports: React.FC = () => {
           </div>
         </div>
 
-        {/* Center: Corporate Script Slogan with Curved Red Stroke */}
-        <div className="hidden md:flex flex-col items-center justify-center text-center px-4">
-          <span 
-            className="text-2xl lg:text-3xl font-bold text-slate-800 tracking-wide select-none"
-            style={{ fontFamily: "'Caveat', cursive" }}
-          >
-            "Juntos por un trabajo más seguro"
-          </span>
-          <svg className="w-56 h-3 mt-0.5" viewBox="0 0 220 12" fill="none">
-            <path
-              d="M 6 6 Q 110 14, 214 4"
-              stroke="#ea000c"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-
         {/* Right: Date Picker Pill + Notification Bell + User Avatar */}
-        <div className="flex items-center justify-between sm:justify-end gap-3 w-full lg:w-auto relative print:hidden">
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto relative print:hidden">
           
           {/* Interactive Date Range Button */}
           <div className="relative">
@@ -480,7 +479,7 @@ export const Reports: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setIsDatePickerOpen(false)}
-                    className="px-3 py-1.5 bg-[#ea000c] text-white font-bold text-xs rounded-lg shadow-sm hover:bg-red-700"
+                    className="px-3 py-1.5 bg-[#ea000c] text-white font-bold text-xs rounded-lg shadow-sm hover:bg-red-700 cursor-pointer"
                   >
                     Aplicar
                   </button>
@@ -489,22 +488,28 @@ export const Reports: React.FC = () => {
             )}
           </div>
 
-          {/* Notification Bell with Badge */}
+          {/* Notification Bell with Real Pending Authorizations Badge & Direct Navigation */}
           <button 
-            onClick={() => setAlert('Tienes 3 solicitudes de reposición pendientes de validación', 'warning')}
+            onClick={() => navigate('admin-dashboard')}
             className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            title="Notificaciones"
+            title={`Ver autorizaciones pendientes (${pendingDeliveriesCount})`}
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#ea000c] text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white">
-              3
-            </span>
+            {pendingDeliveriesCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-[#ea000c] text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white">
+                {pendingDeliveriesCount}
+              </span>
+            )}
           </button>
 
-          {/* User Avatar Circle */}
-          <div className="relative cursor-pointer" title="Andrés Alquinta - Encargado Administrativo">
-            <div className="w-9 h-9 rounded-full bg-[#ea000c] text-white flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-slate-100">
-              AA
+          {/* User Avatar Circle with Dynamic Session Initials */}
+          <div 
+            onClick={() => navigate('admin-dashboard')}
+            className="relative cursor-pointer" 
+            title={`${currentUserInfo.fullName} (${currentUserInfo.role})`}
+          >
+            <div className="w-9 h-9 rounded-full bg-[#ea000c] text-white flex items-center justify-center font-bold text-xs shadow-2xs ring-2 ring-slate-100 select-none">
+              {currentUserInfo.initials}
             </div>
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
           </div>
@@ -527,7 +532,7 @@ export const Reports: React.FC = () => {
         <div className="flex gap-3 w-full sm:w-auto print:hidden">
           <button
             onClick={() => window.print()}
-            className="w-full sm:w-auto bg-white border border-[#ea000c] text-[#ea000c] hover:bg-red-50 text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            className="w-full sm:w-auto bg-white border border-[#ea000c] text-[#ea000c] hover:bg-red-50 text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
             Exportar PDF
@@ -535,7 +540,7 @@ export const Reports: React.FC = () => {
           {activeTab === 'logs' && (
             <button
               onClick={handleExportLogsExcel}
-              className="w-full sm:w-auto bg-[#166534] hover:bg-green-700 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+              className="w-full sm:w-auto bg-[#166534] hover:bg-green-700 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">table_view</span>
               Exportar Excel
@@ -574,146 +579,157 @@ export const Reports: React.FC = () => {
       {activeTab === 'dashboard' ? (
         <div className="flex flex-col gap-6">
 
-          {/* 3. 4 KPI Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* 3. 4 KPI Metric Cards (Image 1 layout: Horizontal structure Icon - Content - Sparkline) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Card 1: Entregas realizadas */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3">
+              {/* Left: Icon Container */}
+              <div className="w-12 h-12 rounded-2xl bg-[#eef2ff] text-[#4f46e5] flex items-center justify-center shrink-0 shadow-2xs">
+                <span className="material-symbols-outlined text-[26px]">inventory_2</span>
+              </div>
+
+              {/* Middle: Text Info */}
+              <div className="flex flex-col flex-1 min-w-0 justify-center">
+                <span className="text-xs font-bold text-slate-800 leading-tight">
                   Entregas realizadas
                 </span>
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[22px]">inventory_2</span>
-                </div>
-              </div>
-              <div className="mt-2">
-                <div className="text-3xl font-black text-slate-900 tracking-tight">
+                <span className="text-2xl font-black text-slate-900 leading-none my-1 tracking-tight">
                   {totalDeliveredQty.toLocaleString('es-CL')}
-                </div>
-                <div className="flex items-center gap-1.5 mt-2">
-                  <span className="inline-flex items-center text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                    ↑ 18%
+                </span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+                    18%
                   </span>
-                  <span className="text-[11px] text-slate-500 font-medium">vs. período anterior</span>
+                  <span className="text-[10px] text-slate-400 font-medium">vs. período anterior</span>
                 </div>
               </div>
-              {/* Mini Sparkline Bar Chart */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-end gap-1.5 h-7">
-                {[30, 45, 60, 40, 75, 55, 85, 70, 95, 100].map((h, i) => (
+
+              {/* Right: Sparkline Bars */}
+              <div className="flex items-end gap-1 h-7 shrink-0 self-end mb-1">
+                {[45, 65, 35, 85, 100].map((h, i) => (
                   <div
                     key={i}
-                    className="flex-1 bg-blue-500/80 hover:bg-blue-600 rounded-t transition-all"
+                    className="w-1.5 rounded-t-sm bg-[#93c5fd]"
                     style={{ height: `${h}%` }}
-                    title={`${h}%`}
                   />
                 ))}
               </div>
             </div>
 
             {/* Card 2: Ingresos a bodega */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3">
+              {/* Left: Icon Container */}
+              <div className="w-12 h-12 rounded-2xl bg-[#ecfdf5] text-[#059669] flex items-center justify-center shrink-0 shadow-2xs">
+                <span className="material-symbols-outlined text-[26px]">local_shipping</span>
+              </div>
+
+              {/* Middle: Text Info */}
+              <div className="flex flex-col flex-1 min-w-0 justify-center">
+                <span className="text-xs font-bold text-slate-800 leading-tight">
                   Ingresos a bodega
                 </span>
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[22px]">local_shipping</span>
-                </div>
-              </div>
-              <div className="mt-2">
-                <div className="text-3xl font-black text-slate-900 tracking-tight">
+                <span className="text-2xl font-black text-slate-900 leading-none my-1 tracking-tight">
                   {totalIngresosQty.toLocaleString('es-CL')}
-                </div>
-                <div className="flex items-center gap-1.5 mt-2">
-                  <span className="inline-flex items-center text-xs font-extrabold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                    — 0%
+                </span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-xs font-bold text-slate-500 inline-flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[14px]">horizontal_rule</span>
+                    0%
                   </span>
-                  <span className="text-[11px] text-slate-500 font-medium">vs. período anterior</span>
+                  <span className="text-[10px] text-slate-400 font-medium">vs. período anterior</span>
                 </div>
               </div>
-              {/* Mini Sparkline Bar Chart */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-end gap-1.5 h-7">
-                {[60, 55, 70, 65, 80, 75, 70, 85, 75, 80].map((h, i) => (
+
+              {/* Right: Sparkline Bars */}
+              <div className="flex items-end gap-1 h-7 shrink-0 self-end mb-1">
+                {[30, 45, 65, 80, 100].map((h, i) => (
                   <div
                     key={i}
-                    className="flex-1 bg-emerald-500/80 hover:bg-emerald-600 rounded-t transition-all"
+                    className="w-1.5 rounded-t-sm bg-[#a7f3d0]"
                     style={{ height: `${h}%` }}
-                    title={`${h}%`}
                   />
                 ))}
               </div>
             </div>
 
             {/* Card 3: Solicitudes rechazadas */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3">
+              {/* Left: Icon Container */}
+              <div className="w-12 h-12 rounded-2xl bg-[#fef2f2] text-[#dc2626] flex items-center justify-center shrink-0 shadow-2xs">
+                <span className="material-symbols-outlined text-[26px]">warning</span>
+              </div>
+
+              {/* Middle: Text Info */}
+              <div className="flex flex-col flex-1 min-w-0 justify-center">
+                <span className="text-xs font-bold text-slate-800 leading-tight">
                   Solicitudes rechazadas
                 </span>
-                <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[22px]">warning</span>
-                </div>
-              </div>
-              <div className="mt-2">
-                <div className="text-3xl font-black text-slate-900 tracking-tight">
+                <span className="text-2xl font-black text-slate-900 leading-none my-1 tracking-tight">
                   {totalRechazadosCount.toLocaleString('es-CL')}
-                </div>
-                <div className="flex items-center gap-1.5 mt-2">
-                  <span className="inline-flex items-center text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                    ↓ 32%
+                </span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
+                    32%
                   </span>
-                  <span className="text-[11px] text-slate-500 font-medium">vs. período anterior</span>
+                  <span className="text-[10px] text-slate-400 font-medium">vs. período anterior</span>
                 </div>
               </div>
-              {/* Mini Sparkline Bar Chart */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-end gap-1.5 h-7">
-                {[80, 70, 65, 55, 50, 45, 40, 35, 30, 25].map((h, i) => (
+
+              {/* Right: Sparkline Bars */}
+              <div className="flex items-end gap-1 h-7 shrink-0 self-end mb-1">
+                {[90, 75, 50, 65, 40].map((h, i) => (
                   <div
                     key={i}
-                    className="flex-1 bg-red-500/80 hover:bg-red-600 rounded-t transition-all"
+                    className="w-1.5 rounded-t-sm bg-[#fecaca]"
                     style={{ height: `${h}%` }}
-                    title={`${h}%`}
                   />
                 ))}
               </div>
             </div>
 
             {/* Card 4: EPP más solicitado */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3">
+              {/* Left: Icon Container */}
+              <div className="w-12 h-12 rounded-2xl bg-[#fffbeb] text-[#d97706] flex items-center justify-center shrink-0 shadow-2xs">
+                <span className="material-symbols-outlined text-[26px]">workspace_premium</span>
+              </div>
+
+              {/* Middle: Text Info */}
+              <div className="flex flex-col flex-1 min-w-0 justify-center">
+                <span className="text-xs font-bold text-slate-800 leading-tight">
                   EPP más solicitado
                 </span>
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[22px]">workspace_premium</span>
-                </div>
-              </div>
-              <div className="mt-2">
-                <div className="text-lg font-black text-slate-900 tracking-tight truncate" title={topEppName}>
+                <span className="text-base font-bold text-slate-900 leading-tight mt-0.5 truncate" title={topEppName}>
                   {topEppName}
-                </div>
-                <div className="text-sm font-semibold text-slate-500 mt-1">
+                </span>
+                <span className="text-xs text-slate-500 font-medium mt-0.5">
                   {topEppCount} unidades
-                </div>
+                </span>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-semibold">
-                <span>Mayor rotación en faena</span>
-                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+
+              {/* Right: Chevron */}
+              <div className="shrink-0 text-slate-400">
+                <span className="material-symbols-outlined text-[22px]">chevron_right</span>
               </div>
             </div>
 
           </div>
 
-          {/* 4. 3 Interactive Graphical Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* 4. Row 2: 3 Graphical Cards (Image 2 layout: 45% / 30% / 25% horizontal width distribution) */}
+          <div className="flex flex-col xl:flex-row items-stretch gap-4 sm:gap-5 w-full">
 
-            {/* CHART 1: Consumo de EPP por Categoría (Donut Chart) */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                  Consumo de EPP por Categoría
-                </h3>
+            {/* CARD 1 (45% Width): Consumo de EPP por Categoría */}
+            <div className="w-full xl:w-[45%] bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-slate-700 text-[20px]">donut_small</span>
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                    Consumo de EPP por Categoría
+                  </h3>
+                </div>
                 <select
                   value={categoryPeriod}
                   onChange={(e) => setCategoryPeriod(e.target.value)}
@@ -725,11 +741,11 @@ export const Reports: React.FC = () => {
                 </select>
               </div>
 
-              {/* Donut and Legend Container */}
-              <div className="flex flex-col sm:flex-row items-center gap-6 my-auto pt-2">
+              {/* Donut and Legend Layout (Image 2) */}
+              <div className="flex flex-col sm:flex-row items-center gap-5 my-auto pt-1">
                 
-                {/* SVG Donut Chart */}
-                <div className="relative w-40 h-40 shrink-0 flex items-center justify-center">
+                {/* SVG Donut Chart with center label */}
+                <div className="relative w-44 h-44 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     {(() => {
                       let accumulated = 0;
@@ -742,13 +758,13 @@ export const Reports: React.FC = () => {
                             key={idx}
                             cx="50"
                             cy="50"
-                            r="40"
+                            r="38"
                             fill="transparent"
                             stroke={item.color}
                             strokeWidth="15"
                             strokeDasharray={strokeDasharray}
                             strokeDashoffset={strokeDashoffset}
-                            className="transition-all duration-500 hover:opacity-85"
+                            className="transition-all duration-300 hover:opacity-85"
                           />
                         );
                       });
@@ -756,24 +772,24 @@ export const Reports: React.FC = () => {
                   </svg>
                   {/* Center Cutout Text */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                    <span className="text-lg font-black text-slate-900 leading-none">
+                    <span className="text-2xl font-black text-slate-900 leading-none">
                       {totalDeliveredQty.toLocaleString('es-CL')}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
+                    <span className="text-xs font-bold text-slate-500 mt-1">
                       Entregas
                     </span>
                   </div>
                 </div>
 
-                {/* Legend List */}
-                <div className="flex flex-col gap-2.5 w-full text-xs">
+                {/* 9 Categories Legend List */}
+                <div className="flex flex-col gap-1.5 w-full text-xs">
                   {categoryData.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between">
                       <div className="flex items-center gap-2 truncate">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                         <span className="font-semibold text-slate-700 truncate">{item.label}</span>
                       </div>
-                      <span className="font-mono text-slate-500 font-medium shrink-0 ml-2">
+                      <span className="font-mono text-slate-600 font-bold shrink-0 ml-2">
                         {item.qty} uds. ({item.pct}%)
                       </span>
                     </div>
@@ -783,12 +799,15 @@ export const Reports: React.FC = () => {
               </div>
             </div>
 
-            {/* CHART 2: Balance de Movimientos de Bodega (Grouped Bar Chart) */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                  Balance de Movimientos de Bodega
-                </h3>
+            {/* CARD 2 (30% Width): Balance de Movimientos de Bodega */}
+            <div className="w-full xl:w-[30%] bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-slate-700 text-[20px]">balance</span>
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                    Balance de Movimientos de Bodega
+                  </h3>
+                </div>
                 <select
                   value={balancePeriod}
                   onChange={(e) => setBalancePeriod(e.target.value)}
@@ -799,170 +818,225 @@ export const Reports: React.FC = () => {
                 </select>
               </div>
 
-              {/* Pure SVG Grouped Bar Chart */}
-              <div className="w-full h-44 flex flex-col justify-between pt-2">
-                <svg className="w-full h-36" viewBox="0 0 300 120" preserveAspectRatio="none">
-                  {/* Horizontal Grid lines */}
-                  <line x1="0" y1="20" x2="300" y2="20" stroke="#f1f5f9" strokeDasharray="3 3" />
-                  <line x1="0" y1="50" x2="300" y2="50" stroke="#f1f5f9" strokeDasharray="3 3" />
-                  <line x1="0" y1="80" x2="300" y2="80" stroke="#f1f5f9" strokeDasharray="3 3" />
-                  <line x1="0" y1="110" x2="300" y2="110" stroke="#e2e8f0" strokeWidth="1" />
-
-                  {/* Bars grouped by month */}
-                  {balanceData.map((d, i) => {
-                    const xBase = 15 + i * 48;
-                    const maxVal = 250;
-                    const hIngresos = Math.round((d.ingresos / maxVal) * 90);
-                    const hEntregas = Math.round((d.entregas / maxVal) * 90);
-
-                    return (
-                      <g key={i}>
-                        {/* Ingresos bar (Green) */}
-                        <rect
-                          x={xBase}
-                          y={110 - hIngresos}
-                          width="14"
-                          height={hIngresos}
-                          rx="3"
-                          fill="#10b981"
-                          className="transition-all hover:opacity-80"
-                        >
-                          <title>{`${d.month} - Ingresos: ${d.ingresos} uds.`}</title>
-                        </rect>
-                        {/* Entregas bar (Blue) */}
-                        <rect
-                          x={xBase + 16}
-                          y={110 - hEntregas}
-                          width="14"
-                          height={hEntregas}
-                          rx="3"
-                          fill="#3b82f6"
-                          className="transition-all hover:opacity-80"
-                        >
-                          <title>{`${d.month} - Entregas: ${d.entregas} uds.`}</title>
-                        </rect>
-                        {/* Month Label */}
-                        <text
-                          x={xBase + 15}
-                          y="120"
-                          textAnchor="middle"
-                          fontSize="9"
-                          fill="#64748b"
-                          fontWeight="bold"
-                        >
-                          {d.month}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
+              {/* Sublegend below header */}
+              <div className="flex flex-col gap-1 text-[11px] text-slate-600 font-semibold mb-2">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-xs bg-[#10b981]"></span>
+                  Ingresos a Bodega (Nuevas Reposiciones)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-xs bg-[#3b82f6]"></span>
+                  Entregas de EPP a Colaboradores (Despacho)
+                </span>
               </div>
 
-              {/* Bottom Legend Chips */}
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-slate-600 pt-3 border-t border-slate-100">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></span>
-                  Ingresos: {totalIngresosQty} uds.
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]"></span>
-                  Entregas: {totalDeliveredQty} uds.
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></span>
-                  Rechazos: {totalRechazadosCount} uds.
-                </span>
+              {/* Grouped Bar Chart with Left Y-Axis labels */}
+              <div className="w-full h-36 flex items-center justify-between">
+                {/* Y-axis labels */}
+                <div className="flex flex-col justify-between h-28 text-[9px] font-mono text-slate-400 text-right pr-2 select-none">
+                  <span>1.200</span>
+                  <span>900</span>
+                  <span>600</span>
+                  <span>300</span>
+                  <span>0</span>
+                </div>
+
+                {/* SVG Bars */}
+                <div className="flex-1 h-32">
+                  <svg className="w-full h-full" viewBox="0 0 250 120" preserveAspectRatio="none">
+                    {/* Horizontal Grid lines */}
+                    <line x1="0" y1="10" x2="250" y2="10" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="35" x2="250" y2="35" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="60" x2="250" y2="60" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="85" x2="250" y2="85" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="105" x2="250" y2="105" stroke="#e2e8f0" strokeWidth="1" />
+
+                    {/* Bars grouped by month */}
+                    {balanceData.map((d, i) => {
+                      const xBase = 12 + i * 40;
+                      const maxVal = 1200;
+                      const hIngresos = Math.round((d.ingresos / maxVal) * 90);
+                      const hEntregas = Math.round((d.entregas / maxVal) * 90);
+
+                      return (
+                        <g key={i}>
+                          {/* Ingresos bar (Green) */}
+                          <rect
+                            x={xBase}
+                            y={105 - hIngresos}
+                            width="11"
+                            height={hIngresos}
+                            rx="2"
+                            fill="#10b981"
+                            className="transition-all hover:opacity-85"
+                          >
+                            <title>{`${d.month} - Ingresos: ${d.ingresos} uds.`}</title>
+                          </rect>
+                          {/* Entregas bar (Blue) */}
+                          <rect
+                            x={xBase + 13}
+                            y={105 - hEntregas}
+                            width="11"
+                            height={hEntregas}
+                            rx="2"
+                            fill="#3b82f6"
+                            className="transition-all hover:opacity-85"
+                          >
+                            <title>{`${d.month} - Entregas: ${d.entregas} uds.`}</title>
+                          </rect>
+                          {/* Month Label */}
+                          <text
+                            x={xBase + 12}
+                            y="117"
+                            textAnchor="middle"
+                            fontSize="9"
+                            fill="#64748b"
+                            fontWeight="bold"
+                          >
+                            {d.month}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+              </div>
+
+              {/* Bottom 3 Summary Rounded Chips (Image 2) */}
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100">
+                {/* 1. Ingresos */}
+                <div className="bg-[#ecfdf5] border border-emerald-100/80 rounded-xl p-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#059669] text-[20px] shrink-0">inventory_2</span>
+                  <div className="overflow-hidden leading-tight text-left">
+                    <span className="text-sm font-black text-slate-900 block">{totalIngresosQty}</span>
+                    <span className="text-[9px] text-slate-500 font-medium block truncate">unidades ingresadas</span>
+                  </div>
+                </div>
+
+                {/* 2. Entregas */}
+                <div className="bg-[#eff6ff] border border-blue-100/80 rounded-xl p-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#2563eb] text-[20px] shrink-0">near_me</span>
+                  <div className="overflow-hidden leading-tight text-left">
+                    <span className="text-sm font-black text-[#2563eb] block">{totalDeliveredQty.toLocaleString('es-CL')}</span>
+                    <span className="text-[9px] text-slate-500 font-medium block truncate">unidades entregadas</span>
+                  </div>
+                </div>
+
+                {/* 3. Rechazos */}
+                <div className="bg-[#fef2f2] border border-red-100/80 rounded-xl p-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#dc2626] text-[20px] shrink-0">warning</span>
+                  <div className="overflow-hidden leading-tight text-left">
+                    <span className="text-sm font-black text-[#dc2626] block">{totalRechazadosCount}</span>
+                    <span className="text-[9px] text-red-500 font-semibold block truncate">solicitudes rechazadas (1%)</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* CHART 3: Tendencia de Entregas (Line & Area Chart) */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                  Tendencia de Entregas
-                </h3>
+            {/* CARD 3 (25% Width): Tendencia de Entregas (Sawtooth Peaks Chart) */}
+            <div className="w-full xl:w-[25%] bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-slate-700 text-[20px]">trending_up</span>
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                    Tendencia de Entregas
+                  </h3>
+                </div>
                 <select
                   value={trendPeriod}
                   onChange={(e) => setTrendPeriod(e.target.value)}
                   className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-600 outline-none cursor-pointer"
                 >
-                  <option>Mes actual</option>
                   <option>Últimos 30 días</option>
+                  <option>Mes actual</option>
                 </select>
               </div>
 
-              {/* Pure SVG Area & Line Chart */}
-              <div className="relative w-full h-44 flex items-center justify-center pt-2">
-                <svg className="w-full h-36" viewBox="0 0 300 120" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
+              {/* Sawtooth Mountain Peaks Chart (Image 2) */}
+              <div className="relative w-full h-40 flex items-center justify-between pt-1">
+                {/* Left Y-axis values */}
+                <div className="flex flex-col justify-between h-32 text-[9px] font-mono text-slate-400 text-right pr-2 select-none">
+                  <span>100</span>
+                  <span>80</span>
+                  <span>60</span>
+                  <span>40</span>
+                  <span>20</span>
+                  <span>0</span>
+                </div>
 
-                  {/* Horizontal Guide lines */}
-                  <line x1="0" y1="25" x2="300" y2="25" stroke="#f1f5f9" strokeDasharray="3 3" />
-                  <line x1="0" y1="65" x2="300" y2="65" stroke="#f1f5f9" strokeDasharray="3 3" />
-                  <line x1="0" y1="105" x2="300" y2="105" stroke="#e2e8f0" />
+                {/* SVG Sawtooth Area and Line */}
+                <div className="flex-1 h-36 relative">
+                  <svg className="w-full h-full" viewBox="0 0 270 140" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="peakGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.45" />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
 
-                  {/* Area fill path */}
-                  <path
-                    d="M 20 85 C 75 75, 120 60, 150 48 C 190 35, 230 25, 280 15 L 280 105 L 20 105 Z"
-                    fill="url(#trendGradient)"
-                  />
+                    {/* Horizontal Guide lines */}
+                    <line x1="25" y1="15" x2="265" y2="15" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="25" y1="38" x2="265" y2="38" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="25" y1="61" x2="265" y2="61" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="25" y1="84" x2="265" y2="84" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="25" y1="107" x2="265" y2="107" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="25" y1="125" x2="265" y2="125" stroke="#e2e8f0" />
 
-                  {/* Smooth curved trend line */}
-                  <path
-                    d="M 20 85 C 75 75, 120 60, 150 48 C 190 35, 230 25, 280 15"
-                    fill="none"
-                    stroke="#2563eb"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
+                    {/* Area fill path */}
+                    <path
+                      d={peakAreaPath}
+                      fill="url(#peakGradient)"
+                    />
 
-                  {/* Data points */}
-                  {trendData.map((p, idx) => {
-                    const cx = 20 + idx * 65;
-                    const cy = Math.round(105 - (p.value / 85) * 90);
-                    return (
-                      <g key={idx}>
-                        <circle
-                          cx={cx}
-                          cy={cy}
-                          r="4"
-                          fill="#ffffff"
-                          stroke="#2563eb"
-                          strokeWidth="2.5"
-                        />
-                        <text
-                          x={cx}
-                          y="118"
-                          textAnchor="middle"
-                          fontSize="8.5"
-                          fill="#64748b"
-                          fontWeight="bold"
-                        >
-                          {p.label}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
+                    {/* Jagged Sawtooth line */}
+                    <path
+                      d={peakLinePath}
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
 
-                {/* Floating Tooltip Pin on the last peak point */}
-                <div className="absolute top-1 right-2 bg-slate-900 text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-lg pointer-events-none flex items-center gap-1">
-                  <span>31 ago. 2026: 76 entregas</span>
-                  <div className="absolute -bottom-1 right-5 w-2 h-2 bg-slate-900 rotate-45"></div>
+                    {/* Peak Point Dot on Day 31 */}
+                    <circle
+                      cx="242"
+                      cy="46"
+                      r="4.5"
+                      fill="#2563eb"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                    />
+
+                    {/* Bottom X-axis tick labels */}
+                    <text x="30" y="137" textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="bold">1 ago.</text>
+                    <text x="80" y="137" textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="bold">8 ago.</text>
+                    <text x="140" y="137" textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="bold">15 ago.</text>
+                    <text x="188" y="137" textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="bold">22 ago.</text>
+                    <text x="242" y="137" textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="bold">31 ago.</text>
+                  </svg>
+
+                  {/* Tooltip Card above Peak (Image 2) */}
+                  <div className="absolute top-0 right-1 bg-white border border-slate-200 text-slate-800 text-[9px] px-2 py-1 rounded-lg shadow-sm pointer-events-none text-left">
+                    <p className="text-slate-400 font-semibold leading-none">31 ago. 2026</p>
+                    <p className="font-bold text-slate-900 text-[11px] leading-tight mt-0.5">76 entregas</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Bottom Indicator Badge */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
-                  <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                  +18% Aumento en entregas respecto al período anterior
-                </span>
+              {/* Bottom Mint-Green Indicator Card (Image 2) */}
+              <div className="bg-[#ecfdf5] border border-emerald-100 rounded-xl p-3 flex items-center gap-3 mt-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[18px]">north_east</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-black text-emerald-800 tracking-tight leading-none">
+                    +18%
+                  </span>
+                  <span className="text-xs font-semibold text-slate-600 leading-tight">
+                    Aumento en entregas respecto al período anterior
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -972,7 +1046,7 @@ export const Reports: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {/* TABLE 1: Top 10 EPP Más Solicitados */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-blue-600 font-bold">trending_up</span>
@@ -1026,7 +1100,7 @@ export const Reports: React.FC = () => {
             </div>
 
             {/* TABLE 2: Top 10 Colaboradores con Más EPP */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-blue-600 font-bold">groups</span>
@@ -1098,7 +1172,7 @@ export const Reports: React.FC = () => {
         /* VIEW: REGISTRO DE MOVIMIENTOS HISTÓRICOS */
         <div className="flex flex-col gap-6">
           {/* Filters Bar */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs">
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-slate-500 text-[20px]">filter_list</span>
               <h3 className="text-xs uppercase font-extrabold tracking-wider text-slate-800">
@@ -1171,7 +1245,7 @@ export const Reports: React.FC = () => {
           </div>
 
           {/* Historical Logs List Table */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm flex flex-col flex-grow">
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs flex flex-col flex-grow">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="bg-slate-50 border-b border-slate-200">

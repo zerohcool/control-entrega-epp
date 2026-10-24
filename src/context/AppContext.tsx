@@ -20,8 +20,17 @@ export interface AlertNotification {
   type: 'success' | 'error' | 'warning';
 }
 
+export interface CurrentUserInfo {
+  fullName: string;
+  initials: string;
+  role: string;
+  email?: string;
+}
+
 interface AppContextType {
   user: UserSession | null;
+  currentUserInfo: CurrentUserInfo;
+  pendingDeliveriesCount: number;
   activeView: ViewType;
   selectedWorkerId: string | null;
   cart: CartItem[];
@@ -123,6 +132,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     refreshData();
   }, []);
+
+  const pendingDeliveriesCount = deliveries.filter(d => d.status === 'Pendiente').length;
+
+  const currentUserInfo: CurrentUserInfo = React.useMemo(() => {
+    if (user?.role === 'admin') {
+      const admin = admins.find(a => a.username.toLowerCase() === user.username?.toLowerCase());
+      if (admin) {
+        const fName = admin.first_name || '';
+        const lName = admin.last_name || '';
+        const initials = `${fName[0] || ''}${lName[0] || ''}`.toUpperCase() || admin.username.slice(0, 2).toUpperCase();
+        return {
+          fullName: `${fName} ${lName}`.trim() || admin.username,
+          initials,
+          role: 'Encargado Administrativo',
+          email: admin.email
+        };
+      }
+      return {
+        fullName: user.username || 'Administrador',
+        initials: (user.username?.slice(0, 2) || 'AD').toUpperCase(),
+        role: 'Encargado Administrativo'
+      };
+    } else if (user?.role === 'worker') {
+      const worker = workers.find(w => w.id === user.workerId);
+      if (worker) {
+        const fName = worker.first_name || '';
+        const lName = worker.last_name || '';
+        const initials = `${fName[0] || ''}${lName[0] || ''}`.toUpperCase() || 'TR';
+        return {
+          fullName: `${fName} ${lName}`.trim() || 'Trabajador',
+          initials,
+          role: worker.cargo || 'Colaborador',
+          email: worker.email
+        };
+      }
+    }
+    return {
+      fullName: 'Usuario',
+      initials: 'US',
+      role: 'Usuario'
+    };
+  }, [user, admins, workers]);
 
   const setAlert = (message: string, type: 'success' | 'error' | 'warning', duration = 2000) => {
     setAlertNotification({ message, type });
@@ -493,7 +544,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteAdmin,
       deleteHistoryRecord,
       reportsTab,
-      setReportsTab
+      setReportsTab,
+      currentUserInfo,
+      pendingDeliveriesCount
     }}>
       {children}
     </AppContext.Provider>

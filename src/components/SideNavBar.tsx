@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const SideNavBar: React.FC = () => {
-  const { activeView, navigate, logout, user, isMobileMenuOpen, setIsMobileMenuOpen, reportsTab, setReportsTab, setAlert } = useApp();
+  const { activeView, navigate, logout, user, isMobileMenuOpen, setIsMobileMenuOpen, reportsTab, setReportsTab, setAlert, currentUserInfo } = useApp();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // If the user is not an admin, they shouldn't see this bar
@@ -152,11 +152,11 @@ export const SideNavBar: React.FC = () => {
           {/* User Profile Pill */}
           <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-2.5">
             <div className="w-9 h-9 rounded-full bg-[#ea000c] text-white flex items-center justify-center font-bold text-xs ring-2 ring-white/20 shrink-0">
-              AA
+              {currentUserInfo.initials}
             </div>
             <div className="overflow-hidden text-left">
-              <p className="text-xs font-bold text-white truncate">Andrés Alquinta</p>
-              <p className="text-[10px] text-white/60 truncate font-medium">Encargado Administrativo</p>
+              <p className="text-xs font-bold text-white truncate">{currentUserInfo.fullName}</p>
+              <p className="text-[10px] text-white/60 truncate font-medium">{currentUserInfo.role}</p>
             </div>
           </div>
 
