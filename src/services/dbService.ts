@@ -130,6 +130,30 @@ const DEFAULT_WORKERS: Worker[] = [
     department: 'Operaciones Mantenimiento',
     status: 'Activo',
     created_at: new Date(2018, 5, 18).toISOString()
+  },
+  {
+    id: '11111111-1111-1111-1111-111111111100',
+    rut: '16.890.123-4',
+    first_name: 'Andrés',
+    last_name: 'Alquinta',
+    email: 'andres.alquinta@enaex.com',
+    phone: '+56 9 6673 5408',
+    cargo: 'Encargado Administrativo',
+    department: 'Administración y Finanzas',
+    status: 'Activo',
+    created_at: new Date(2020, 0, 1).toISOString()
+  },
+  {
+    id: '11111111-1111-1111-1111-111111111106',
+    rut: '13.456.789-0',
+    first_name: 'Jaime',
+    last_name: 'Valdés',
+    email: 'j.valdes@eppcontrol.cl',
+    phone: '+56 9 7788 9900',
+    cargo: 'Jefe de Bodega y Almacén',
+    department: 'Logística',
+    status: 'Activo',
+    created_at: new Date(2021, 5, 1).toISOString()
   }
 ];
 

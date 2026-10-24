@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { getCategoryIcon } from '../models/types';
 
 export const Reports: React.FC = () => {
   const { 
@@ -10,7 +11,8 @@ export const Reports: React.FC = () => {
     setReportsTab, 
     navigate, 
     currentUserInfo, 
-    pendingDeliveriesCount 
+    pendingDeliveriesCount,
+    eppItems
   } = useApp();
 
   // Internal tab state synced with reportsTab context
@@ -32,6 +34,12 @@ export const Reports: React.FC = () => {
   const [hoveredCategory, setHoveredCategory] = useState<{ label: string; qty: number; pct: number; color: string } | null>(null);
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [hoveredPeakIndex, setHoveredPeakIndex] = useState<number | null>(null);
+
+  // Local state for Product Consumption Averages Table
+  const [productTableSearch, setProductTableSearch] = useState('');
+  const [productTableCategory, setProductTableCategory] = useState('Todas');
+  const [productSortBy, setProductSortBy] = useState<'weekly' | 'monthly' | 'stock' | 'name'>('weekly');
+  const [productSortAsc, setProductSortAsc] = useState(false);
 
   const handleDeleteLog = async (id: string, type: 'Entrega' | 'Rechazo' | 'Ingreso') => {
     if (!confirm('¿Está seguro de que desea eliminar este registro del historial de movimientos? Esta acción no se puede deshacer.')) {
@@ -327,6 +335,232 @@ export const Reports: React.FC = () => {
 
     return merged.slice(0, 10);
   }, [workerCounts]);
+
+  // Period duration in days, weeks, months for averages calculation
+  const periodDuration = useMemo(() => {
+    let days = 30;
+    if (startDate && endDate) {
+      const startMs = new Date(startDate + 'T00:00:00').getTime();
+      const endMs = new Date(endDate + 'T23:59:59').getTime();
+      days = Math.max(1, Math.round((endMs - startMs) / 86400000) + 1);
+    } else {
+      if (dateRangePreset === 'last_30_days') days = 30;
+      else if (dateRangePreset === 'current_month') {
+        const now = new Date();
+        days = Math.max(1, now.getDate());
+      } else if (dateRangePreset === 'last_6_months') days = 180;
+      else if (dateRangePreset === 'year_2026') days = 365;
+      else if (dateRangePreset === 'all') {
+        if (historyLogs.length > 0) {
+          const times = historyLogs.map(l => new Date(l.date).getTime()).filter(t => !isNaN(t));
+          if (times.length > 0) {
+            const minT = Math.min(...times);
+            const maxT = Math.max(...times, Date.now());
+            days = Math.max(30, Math.round((maxT - minT) / 86400000) + 1);
+          } else {
+            days = 365;
+          }
+        } else {
+          days = 365;
+        }
+      }
+    }
+    const weeks = Math.max(0.14, days / 7);
+    const months = Math.max(0.03, days / 30.4167);
+    return { days, weeks, months };
+  }, [startDate, endDate, dateRangePreset, historyLogs]);
+
+  // Comprehensive Product Consumption Averages Data
+  const productConsumptionList = useMemo(() => {
+    // 1. Gather all catalog products from eppItems
+    const productsMap = new Map<string, {
+      id: string;
+      sku: string;
+      name: string;
+      category: string;
+      stock: number;
+      min_stock: number;
+      price: number;
+      image_url?: string;
+      deliveredQty: number;
+    }>();
+
+    eppItems.forEach(item => {
+      productsMap.set(item.name.toLowerCase().trim(), {
+        id: item.id,
+        sku: item.sku,
+        name: item.name,
+        category: item.category,
+        stock: item.stock,
+        min_stock: item.min_stock,
+        price: item.price,
+        image_url: item.image_url,
+        deliveredQty: 0
+      });
+    });
+
+    // Also include baseline top items if not present in eppItems
+    baselineTopEpps.forEach((b, idx) => {
+      const key = b.name.toLowerCase().trim();
+      if (!productsMap.has(key)) {
+        let cat = 'Protección General';
+        if (b.name.includes('Guantes')) cat = 'Protección Manos';
+        else if (b.name.includes('Casco')) cat = 'Protección Cabeza';
+        else if (b.name.includes('Lentes')) cat = 'Protección Visual';
+        else if (b.name.includes('Chaleco') || b.name.includes('Buzo')) cat = 'Ropa Seguridad';
+        else if (b.name.includes('Botas') || b.name.includes('Zapatos')) cat = 'Protección Pies';
+        else if (b.name.includes('Respirador') || b.name.includes('Mascarilla')) cat = 'Protección Respiratoria';
+        else if (b.name.includes('Fono') || b.name.includes('Auditivo')) cat = 'Protección Auditiva';
+        else if (b.name.includes('Arnés')) cat = 'Trabajo en Altura';
+
+        productsMap.set(key, {
+          id: `baseline-${idx}`,
+          sku: `REF-0${idx + 10}`,
+          name: b.name,
+          category: cat,
+          stock: [120, 85, 94, 62, 45, 110, 75, 40, 28, 55][idx] || 50,
+          min_stock: 20,
+          price: 9990,
+          deliveredQty: 0
+        });
+      }
+    });
+
+    // 2. Count delivered units in active filtered deliveries (entregas)
+    entregas.forEach(d => {
+      const key = d.item_name.toLowerCase().trim();
+      const existing = productsMap.get(key);
+      if (existing) {
+        existing.deliveredQty += d.quantity;
+      } else {
+        let foundBySku = false;
+        for (const p of productsMap.values()) {
+          if (p.sku && d.item_sku && p.sku.toLowerCase() === d.item_sku.toLowerCase()) {
+            p.deliveredQty += d.quantity;
+            foundBySku = true;
+            break;
+          }
+        }
+        if (!foundBySku) {
+          productsMap.set(key, {
+            id: d.id,
+            sku: d.item_sku || 'REF-N/A',
+            name: d.item_name,
+            category: d.category || 'General',
+            stock: 30,
+            min_stock: 10,
+            price: d.price || 0,
+            deliveredQty: d.quantity
+          });
+        }
+      }
+    });
+
+    // 3. Fallback: If DB had 0 delivered items (rawDeliveredQty === 0), populate using mockup benchmark counts
+    if (rawDeliveredQty === 0) {
+      baselineTopEpps.forEach(b => {
+        const key = b.name.toLowerCase().trim();
+        const p = productsMap.get(key);
+        if (p && p.deliveredQty === 0) {
+          p.deliveredQty = b.qty;
+        }
+      });
+    }
+
+    // 4. Compute statistics for each product
+    const statsList = Array.from(productsMap.values()).map(p => {
+      const weeklyAvg = p.deliveredQty / periodDuration.weeks;
+      const monthlyAvg = p.deliveredQty / periodDuration.months;
+      
+      const autonomyWeeks = weeklyAvg > 0 ? p.stock / weeklyAvg : Infinity;
+      const autonomyMonths = monthlyAvg > 0 ? p.stock / monthlyAvg : Infinity;
+
+      let statusAlert: {
+        label: string;
+        bg: string;
+        text: string;
+        border: string;
+        icon: string;
+      };
+
+      if (p.stock === 0) {
+        statusAlert = {
+          label: 'Agotado',
+          bg: 'bg-red-50',
+          text: 'text-red-700',
+          border: 'border-red-200',
+          icon: 'error'
+        };
+      } else if (weeklyAvg > 0 && autonomyWeeks < 2) {
+        statusAlert = {
+          label: 'Crítico (< 2 sem)',
+          bg: 'bg-red-50',
+          text: 'text-red-600',
+          border: 'border-red-200',
+          icon: 'warning'
+        };
+      } else if (weeklyAvg > 0 && autonomyWeeks < 4) {
+        statusAlert = {
+          label: 'Alerta (< 1 mes)',
+          bg: 'bg-amber-50',
+          text: 'text-amber-700',
+          border: 'border-amber-200',
+          icon: 'schedule'
+        };
+      } else if (weeklyAvg === 0) {
+        statusAlert = {
+          label: 'Sin consumo',
+          bg: 'bg-slate-50',
+          text: 'text-slate-500',
+          border: 'border-slate-200',
+          icon: 'remove'
+        };
+      } else {
+        statusAlert = {
+          label: 'Óptimo',
+          bg: 'bg-emerald-50',
+          text: 'text-emerald-700',
+          border: 'border-emerald-200',
+          icon: 'check_circle'
+        };
+      }
+
+      return {
+        ...p,
+        weeklyAvg,
+        monthlyAvg,
+        autonomyWeeks,
+        autonomyMonths,
+        statusAlert
+      };
+    });
+
+    // 5. Apply table search and category filter
+    return statsList.filter(p => {
+      if (productTableCategory !== 'Todas' && p.category !== productTableCategory) {
+        return false;
+      }
+      if (productTableSearch.trim()) {
+        const q = productTableSearch.toLowerCase().trim();
+        const matchesName = p.name.toLowerCase().includes(q);
+        const matchesSku = p.sku.toLowerCase().includes(q);
+        const matchesCat = p.category.toLowerCase().includes(q);
+        if (!matchesName && !matchesSku && !matchesCat) return false;
+      }
+      return true;
+    }).sort((a, b) => {
+      if (productSortBy === 'weekly') {
+        return productSortAsc ? a.weeklyAvg - b.weeklyAvg : b.weeklyAvg - a.weeklyAvg;
+      }
+      if (productSortBy === 'monthly') {
+        return productSortAsc ? a.monthlyAvg - b.monthlyAvg : b.monthlyAvg - a.monthlyAvg;
+      }
+      if (productSortBy === 'stock') {
+        return productSortAsc ? a.stock - b.stock : b.stock - a.stock;
+      }
+      return productSortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    });
+  }, [eppItems, baselineTopEpps, entregas, rawDeliveredQty, periodDuration, productTableCategory, productTableSearch, productSortBy, productSortAsc]);
 
   // Categories Breakdown Data (Dynamic from filtered entregas with baseline fallback)
   const categoryData = useMemo(() => {
@@ -1411,6 +1645,322 @@ export const Reports: React.FC = () => {
               </div>
             </div>
 
+          </div>
+
+          {/* 6. CARD: Promedios de Consumo Semanales y Mensuales de cada Producto */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col gap-5">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex items-start gap-3 text-left">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
+                  <span className="material-symbols-outlined text-[24px]">query_stats</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                      Promedios de Consumo de EPP (Semanal y Mensual)
+                    </h3>
+                    <span className="text-[11px] font-bold bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200">
+                      Período analizado: {periodDuration.days} días (~{periodDuration.weeks.toFixed(1)} semanas)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Monitoreo estadístico de rotación, demanda semanal / mensual y cálculo de autonomía de inventario por producto.
+                  </p>
+                </div>
+              </div>
+
+              {/* Search & Category Filter Controls */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    value={productTableSearch}
+                    onChange={(e) => setProductTableSearch(e.target.value)}
+                    placeholder="Buscar EPP o SKU..."
+                    className="pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:bg-white focus:border-blue-500 outline-none w-44 sm:w-52 transition-all"
+                  />
+                  {productTableSearch && (
+                    <button
+                      onClick={() => setProductTableSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">close</span>
+                    </button>
+                  )}
+                </div>
+
+                <select
+                  value={productTableCategory}
+                  onChange={(e) => setProductTableCategory(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 outline-none cursor-pointer focus:bg-white focus:border-blue-500"
+                >
+                  <option value="Todas">Todas las Categorías</option>
+                  <option value="Protección Cabeza">Protección Cabeza</option>
+                  <option value="Protección Manos">Protección Manos</option>
+                  <option value="Protección Visual">Protección Visual</option>
+                  <option value="Protección Pies">Protección Pies</option>
+                  <option value="Ropa Seguridad">Ropa Seguridad</option>
+                  <option value="Protección Respiratoria">Protección Respiratoria</option>
+                  <option value="Protección Auditiva">Protección Auditiva</option>
+                  <option value="Trabajo en Altura">Trabajo en Altura</option>
+                  <option value="Protección General">Protección General</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Quick KPI Strip inside Card */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <div className="bg-white p-3 rounded-lg border border-slate-200/60 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Productos Evaluados
+                </span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-lg font-black text-slate-900">{productConsumptionList.length}</span>
+                  <span className="text-[10px] text-slate-500 font-semibold">ítems activos</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-3 rounded-lg border border-slate-200/60 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Promedio Semanal Global
+                </span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-lg font-black text-blue-600">
+                    {productConsumptionList.reduce((acc, curr) => acc + curr.weeklyAvg, 0).toFixed(1)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-semibold">uds / semana</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-3 rounded-lg border border-slate-200/60 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Promedio Mensual Global
+                </span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-lg font-black text-indigo-600">
+                    {productConsumptionList.reduce((acc, curr) => acc + curr.monthlyAvg, 0).toFixed(1)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-semibold">uds / mes</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-3 rounded-lg border border-slate-200/60 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Alerta de Stock Crítico
+                </span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-lg font-black text-amber-600">
+                    {productConsumptionList.filter(p => p.stock === 0 || (p.weeklyAvg > 0 && p.autonomyWeeks < 4)).length}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-semibold">ítems (&lt; 1 mes)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Data Table */}
+            <div className="overflow-x-auto -mx-1">
+              <table className="w-full text-left border-collapse min-w-[780px]">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <th
+                      onClick={() => {
+                        if (productSortBy === 'name') setProductSortAsc(!productSortAsc);
+                        else { setProductSortBy('name'); setProductSortAsc(false); }
+                      }}
+                      className="py-2.5 px-3 cursor-pointer hover:text-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        Producto / EPP
+                        {productSortBy === 'name' && (
+                          <span className="material-symbols-outlined text-[14px]">
+                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => {
+                        if (productSortBy === 'stock') setProductSortAsc(!productSortAsc);
+                        else { setProductSortBy('stock'); setProductSortAsc(false); }
+                      }}
+                      className="py-2.5 px-3 text-center cursor-pointer hover:text-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        Stock Actual
+                        {productSortBy === 'stock' && (
+                          <span className="material-symbols-outlined text-[14px]">
+                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th className="py-2.5 px-3 text-center">Consumo Total</th>
+                    <th
+                      onClick={() => {
+                        if (productSortBy === 'weekly') setProductSortAsc(!productSortAsc);
+                        else { setProductSortBy('weekly'); setProductSortAsc(false); }
+                      }}
+                      className="py-2.5 px-3 text-center cursor-pointer hover:text-slate-700 transition-colors bg-blue-50/40"
+                    >
+                      <div className="flex items-center justify-center gap-1 text-blue-700">
+                        Promedio Semanal
+                        {productSortBy === 'weekly' && (
+                          <span className="material-symbols-outlined text-[14px]">
+                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => {
+                        if (productSortBy === 'monthly') setProductSortAsc(!productSortAsc);
+                        else { setProductSortBy('monthly'); setProductSortAsc(false); }
+                      }}
+                      className="py-2.5 px-3 text-center cursor-pointer hover:text-slate-700 transition-colors bg-indigo-50/40"
+                    >
+                      <div className="flex items-center justify-center gap-1 text-indigo-700">
+                        Promedio Mensual
+                        {productSortBy === 'monthly' && (
+                          <span className="material-symbols-outlined text-[14px]">
+                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th className="py-2.5 px-3 text-center">Autonomía Proyectada</th>
+                    <th className="py-2.5 px-3 text-right">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs">
+                  {productConsumptionList.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-400">
+                        No se encontraron productos que coincidan con los criterios de búsqueda.
+                      </td>
+                    </tr>
+                  ) : (
+                    productConsumptionList.map((item) => {
+                      const maxWeekly = Math.max(1, ...productConsumptionList.map(p => p.weeklyAvg));
+                      const weeklyPct = Math.min(100, Math.round((item.weeklyAvg / maxWeekly) * 100));
+
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                          {/* Producto & Categoría */}
+                          <td className="py-3 px-3 text-left">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-500 shrink-0">
+                                <span className="material-symbols-outlined text-[18px]">
+                                  {getCategoryIcon(item.category)}
+                                </span>
+                              </div>
+                              <div className="truncate max-w-[220px]">
+                                <span className="font-bold text-slate-800 block truncate" title={item.name}>
+                                  {item.name}
+                                </span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="font-mono text-[10px] text-slate-400 font-semibold">{item.sku}</span>
+                                  <span className="text-[10px] text-slate-300">•</span>
+                                  <span className="text-[10px] text-slate-500">{item.category}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Stock Actual */}
+                          <td className="py-3 px-3 text-center">
+                            <span className={`font-black text-xs ${
+                              item.stock === 0 ? 'text-red-600' :
+                              item.stock <= item.min_stock ? 'text-amber-600' :
+                              'text-slate-800'
+                            }`}>
+                              {item.stock}
+                            </span>
+                            <span className="text-[10px] text-slate-400 block font-medium">
+                              mín: {item.min_stock}
+                            </span>
+                          </td>
+
+                          {/* Consumo Total Período */}
+                          <td className="py-3 px-3 text-center">
+                            <span className="font-extrabold text-slate-900">
+                              {item.deliveredQty}
+                            </span>
+                            <span className="text-[10px] text-slate-400 block">uds</span>
+                          </td>
+
+                          {/* Promedio Semanal */}
+                          <td className="py-3 px-3 text-center bg-blue-50/20">
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="flex items-baseline gap-1">
+                                <span className="font-black text-blue-600 text-[13px]">
+                                  {item.weeklyAvg.toFixed(1)}
+                                </span>
+                                <span className="text-[10px] text-blue-500/80 font-bold">uds/sem</span>
+                              </div>
+                              {/* Mini spark bar */}
+                              <div className="w-16 bg-blue-100 h-1.5 rounded-full overflow-hidden mt-1">
+                                <div
+                                  className="h-full bg-blue-600 rounded-full"
+                                  style={{ width: `${weeklyPct}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Promedio Mensual */}
+                          <td className="py-3 px-3 text-center bg-indigo-50/20">
+                            <div className="flex items-baseline justify-center gap-1">
+                              <span className="font-black text-indigo-700 text-[13px]">
+                                {item.monthlyAvg.toFixed(1)}
+                              </span>
+                              <span className="text-[10px] text-indigo-500/80 font-bold">uds/mes</span>
+                            </div>
+                          </td>
+
+                          {/* Autonomía Proyectada */}
+                          <td className="py-3 px-3 text-center">
+                            {item.stock === 0 ? (
+                              <span className="text-[11px] font-bold text-red-600">0 días</span>
+                            ) : item.weeklyAvg === 0 ? (
+                              <span className="text-[11px] font-medium text-slate-400">Sin consumo</span>
+                            ) : (
+                              <div>
+                                <span className={`font-bold text-xs ${
+                                  item.autonomyWeeks < 2 ? 'text-red-600' :
+                                  item.autonomyWeeks < 4 ? 'text-amber-600' :
+                                  'text-slate-800'
+                                }`}>
+                                  {item.autonomyMonths < 1 
+                                    ? `~${item.autonomyWeeks.toFixed(1)} sem` 
+                                    : `~${item.autonomyMonths.toFixed(1)} meses`}
+                                </span>
+                                <span className="text-[10px] text-slate-400 block font-mono">
+                                  (~{Math.round(item.autonomyWeeks * 7)} días)
+                                </span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Estado / Badge */}
+                          <td className="py-3 px-3 text-right">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${item.statusAlert.bg} ${item.statusAlert.text} ${item.statusAlert.border}`}>
+                              <span className="material-symbols-outlined text-[13px]">
+                                {item.statusAlert.icon}
+                              </span>
+                              {item.statusAlert.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
         </div>

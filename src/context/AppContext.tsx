@@ -162,6 +162,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   }, []);
 
+  // 1. Auto-refresh whenever navigating to another section or tab
+  useEffect(() => {
+    if (user && activeView !== 'login') {
+      refreshData();
+    }
+  }, [activeView, reportsTab]);
+
+  // 2. Auto-refresh on window focus, tab visibility change, and periodic sync (every 15s)
+  useEffect(() => {
+    if (!user || activeView === 'login') return;
+
+    const handleFocus = () => {
+      refreshData();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Silent background poll to detect newly incoming worker requests in real time
+    const pollInterval = setInterval(() => {
+      refreshData();
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(pollInterval);
+    };
+  }, [user, activeView]);
+
   useEffect(() => {
     try {
       if (user) {
@@ -177,29 +213,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const pendingDeliveriesCount = deliveries.filter(d => d.status === 'Pendiente').length;
 
   const currentUserInfo: CurrentUserInfo = React.useMemo(() => {
-    if (user?.role === 'admin') {
-      const admin = admins.find(a => a.username.toLowerCase() === user.username?.toLowerCase());
-      if (admin) {
-        let fName = admin.first_name || '';
-        let lName = admin.last_name || '';
-        if (fName.toLowerCase() === 'administrador' && lName.toLowerCase() === 'principal') {
-          fName = 'Andrés';
-          lName = 'Alquinta';
-        }
-        const initials = `${fName[0] || ''}${lName[0] || ''}`.toUpperCase() || 'AA';
-        return {
-          fullName: `${fName} ${lName}`.trim() || 'Andrés Alquinta',
-          initials,
-          role: 'Encargado Administrativo',
-          email: admin.email
-        };
-      }
-      return {
-        fullName: user.username?.toLowerCase() === 'admin' ? 'Andrés Alquinta' : user.username || 'Andrés Alquinta',
-        initials: user.username?.toLowerCase() === 'admin' ? 'AA' : (user.username?.slice(0, 2) || 'AA').toUpperCase(),
-        role: 'Encargado Administrativo'
-      };
-    } else if (user?.role === 'worker') {
+    // A. If logged in as worker, look up worker and their specific cargo
+    if (user?.role === 'worker') {
       const worker = workers.find(w => w.id === user.workerId);
       if (worker) {
         const fName = worker.first_name || '';
@@ -213,6 +228,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
     }
+
+    // B. If logged in as admin (or custom user), query database for the worker record to retrieve their real cargo
+    if (user?.role === 'admin') {
+      const admin = admins.find(a => a.username.toLowerCase() === user.username?.toLowerCase());
+      
+      let matchedWorker: Worker | undefined = undefined;
+
+      // 1. Search worker by admin email
+      if (admin?.email) {
+        matchedWorker = workers.find(w => w.email && w.email.toLowerCase().trim() === admin.email.toLowerCase().trim());
+      }
+
+      // 2. Search worker by first and last name
+      if (!matchedWorker && admin?.first_name && admin?.last_name) {
+        const adminFullName = `${admin.first_name} ${admin.last_name}`.toLowerCase().trim();
+        matchedWorker = workers.find(w => `${w.first_name} ${w.last_name}`.toLowerCase().trim() === adminFullName);
+      }
+
+      // 3. Search worker by username if it matches RUT or email
+      if (!matchedWorker && user.username) {
+        const cleanUser = user.username.replace(/[\.-]/g, '').toLowerCase().trim();
+        matchedWorker = workers.find(w => 
+          w.rut.replace(/[\.-]/g, '').toLowerCase().trim() === cleanUser ||
+          w.email.toLowerCase().trim() === cleanUser
+        );
+      }
+
+      // 4. Special check for default admin username 'admin' -> Andrés Alquinta
+      if (!matchedWorker && (user.username?.toLowerCase() === 'admin' || admin?.username?.toLowerCase() === 'admin')) {
+        matchedWorker = workers.find(w => 
+          w.first_name.toLowerCase().includes('andrés') || 
+          w.first_name.toLowerCase().includes('andres') ||
+          w.last_name.toLowerCase().includes('alquinta')
+        );
+      }
+
+      // If matching worker found in DB, pull their official cargo
+      if (matchedWorker) {
+        const fName = matchedWorker.first_name || '';
+        const lName = matchedWorker.last_name || '';
+        const initials = `${fName[0] || ''}${lName[0] || ''}`.toUpperCase() || 'TR';
+        return {
+          fullName: `${fName} ${lName}`.trim(),
+          initials,
+          role: matchedWorker.cargo || 'Colaborador',
+          email: matchedWorker.email
+        };
+      }
+
+      // Fallback for admin users without an explicit worker entry
+      if (admin) {
+        let fName = admin.first_name || '';
+        let lName = admin.last_name || '';
+        if (fName.toLowerCase() === 'administrador' && lName.toLowerCase() === 'principal') {
+          fName = 'Andrés';
+          lName = 'Alquinta';
+        }
+        const initials = `${fName[0] || ''}${lName[0] || ''}`.toUpperCase() || 'AA';
+        return {
+          fullName: `${fName} ${lName}`.trim() || 'Andrés Alquinta',
+          initials,
+          role: admin.username.toLowerCase() === 'admin' ? 'Encargado Administrativo' : 'Administrador',
+          email: admin.email
+        };
+      }
+
+      return {
+        fullName: user.username?.toLowerCase() === 'admin' ? 'Andrés Alquinta' : user.username || 'Andrés Alquinta',
+        initials: user.username?.toLowerCase() === 'admin' ? 'AA' : (user.username?.slice(0, 2) || 'AA').toUpperCase(),
+        role: user.username?.toLowerCase() === 'admin' ? 'Encargado Administrativo' : 'Administrador'
+      };
+    }
+
     return {
       fullName: 'Usuario',
       initials: 'US',
@@ -280,6 +368,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setReportsTab(targetReportsTab);
     }
     setIsMobileMenuOpen(false); // Close menu on navigation
+    // Automatically re-fetch database on every section change
+    refreshData();
   };
 
   const addToCart = (item: EPPItem, quantity: number) => {
