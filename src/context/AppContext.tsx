@@ -41,6 +41,11 @@ interface AppContextType {
   setAlert: (message: string, type: 'success' | 'error' | 'warning', duration?: number) => void;
   refreshData: () => Promise<void>;
   approveRequest: (deliveryId: string) => void;
+  approveMultipleRequests: (deliveryIds: string[]) => Promise<{
+    approvedCount: number;
+    failedCount: number;
+    failedItems: { id: string; eppName: string; reason: string }[];
+  }>;
   rejectRequest: (deliveryId: string) => void;
   quickAddStock: (sku: string, quantity: number) => boolean;
   isMobileMenuOpen: boolean;
@@ -281,6 +286,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const approveMultipleRequests = async (deliveryIds: string[]) => {
+    const result = await dbService.approveMultipleDeliveries(deliveryIds);
+    await refreshData();
+    if (result.approvedCount > 0 && result.failedCount === 0) {
+      setAlert(`Aprobación masiva exitosa: ${result.approvedCount} solicitudes fueron aprobadas y el stock fue actualizado.`, 'success', 5000);
+    } else if (result.approvedCount > 0 && result.failedCount > 0) {
+      setAlert(`Se aprobaron ${result.approvedCount} solicitudes. ${result.failedCount} no se pudieron aprobar por falta de stock.`, 'warning', 6000);
+    } else {
+      setAlert('No se pudo aprobar ninguna de las solicitudes seleccionadas por falta de stock.', 'error', 5000);
+    }
+    return result;
+  };
+
   const rejectRequest = async (deliveryId: string) => {
     const success = await dbService.rejectDelivery(deliveryId);
     if (success) {
@@ -446,6 +464,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAlert,
       refreshData,
       approveRequest,
+      approveMultipleRequests,
       rejectRequest,
       quickAddStock,
       isMobileMenuOpen,

@@ -586,6 +586,67 @@ class DBService {
     return !updateErr;
   }
 
+  async approveMultipleDeliveries(ids: string[]): Promise<{
+    approvedCount: number;
+    failedCount: number;
+    failedItems: { id: string; eppName: string; reason: string }[];
+  }> {
+    let approvedCount = 0;
+    let failedCount = 0;
+    const failedItems: { id: string; eppName: string; reason: string }[] = [];
+
+    // Process sequentially so stock reductions from one delivery are immediately reflected before checking the next
+    for (const id of ids) {
+      const { data: delivery, error: fetchErr } = await supabase
+        .from('deliveries')
+        .select('*, epp_items(name, stock)')
+        .eq('id', id)
+        .single();
+
+      if (fetchErr || !delivery) {
+        failedCount++;
+        failedItems.push({ id, eppName: 'Desconocido', reason: 'No se encontró el registro' });
+        continue;
+      }
+
+      // Check current fresh stock from epp_items
+      const { data: epp, error: eppErr } = await supabase
+        .from('epp_items')
+        .select('stock, name')
+        .eq('id', delivery.epp_id)
+        .single();
+
+      const itemName = epp?.name || delivery.epp_items?.name || 'EPP';
+
+      if (eppErr || !epp || epp.stock < delivery.quantity) {
+        failedCount++;
+        failedItems.push({
+          id,
+          eppName: itemName,
+          reason: `Stock insuficiente (Disponible: ${epp?.stock ?? 0}, Solicitado: ${delivery.quantity})`
+        });
+        continue;
+      }
+
+      const { error: updateErr } = await supabase
+        .from('deliveries')
+        .update({
+          status: 'Entregado',
+          delivered_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (updateErr) {
+        failedCount++;
+        failedItems.push({ id, eppName: itemName, reason: 'Error al actualizar base de datos' });
+      } else {
+        approvedCount++;
+      }
+    }
+
+    return { approvedCount, failedCount, failedItems };
+  }
+
   async rejectDelivery(id: string): Promise<boolean> {
     const { error } = await supabase
       .from('deliveries')

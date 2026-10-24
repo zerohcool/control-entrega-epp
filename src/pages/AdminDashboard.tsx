@@ -41,11 +41,14 @@ const convertToWebP = (file: File): Promise<string> => {
 };
 
 export const AdminDashboard: React.FC = () => {
-  const { deliveries, eppItems, approveRequest, rejectRequest, updateEPPItem, navigate } = useApp();
+  const { deliveries, eppItems, approveRequest, approveMultipleRequests, rejectRequest, updateEPPItem, navigate, setAlert } = useApp();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('Procesando solicitud...');
+  const [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]);
 
   const handleApprove = async (id: string) => {
     setIsProcessing(true);
+    setProcessingMessage('Procesando solicitud...');
     try {
       await approveRequest(id);
     } catch (e) {
@@ -57,6 +60,7 @@ export const AdminDashboard: React.FC = () => {
 
   const handleReject = async (id: string) => {
     setIsProcessing(true);
+    setProcessingMessage('Procesando solicitud...');
     try {
       await rejectRequest(id);
     } catch (e) {
@@ -90,6 +94,59 @@ export const AdminDashboard: React.FC = () => {
 
   // Filter pending requests
   const pendingRequests = deliveries.filter(d => d.status === 'Pendiente');
+
+  // Synchronize selected IDs with active pending requests
+  React.useEffect(() => {
+    setSelectedRequestIds(prev => prev.filter(id => pendingRequests.some(r => r.id === id)));
+  }, [deliveries]);
+
+  const handleToggleSelectAll = () => {
+    if (selectedRequestIds.length === pendingRequests.length) {
+      setSelectedRequestIds([]);
+    } else {
+      setSelectedRequestIds(pendingRequests.map(r => r.id));
+    }
+  };
+
+  const handleToggleSelectOne = (id: string) => {
+    setSelectedRequestIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleApproveMassive = async () => {
+    const idsToApprove = selectedRequestIds.length > 0
+      ? selectedRequestIds
+      : pendingRequests.map(r => r.id);
+
+    if (idsToApprove.length === 0) return;
+
+    // Check if any requests have insufficient stock
+    const requestsToProcess = pendingRequests.filter(r => idsToApprove.includes(r.id));
+    const insufficientStockRequests = requestsToProcess.filter(r => r.epp_item && r.epp_item.stock < r.quantity);
+
+    let confirmText = `¿Confirmar la aprobación masiva de ${idsToApprove.length} solicitud(es) de EPP?`;
+    if (insufficientStockRequests.length > 0) {
+      confirmText += `\n\n⚠️ ATENCIÓN: Se detectaron ${insufficientStockRequests.length} solicitud(es) con stock insuficiente en bodega:\n` +
+        insufficientStockRequests.map(r => `• ${r.epp_item?.name || 'EPP'} (Disponible: ${r.epp_item?.stock ?? 0}, Solicitado: ${r.quantity})`).join('\n') +
+        `\n\nLas solicitudes con stock insuficiente serán omitidas automáticamente para proteger el inventario.`;
+    }
+
+    if (!confirm(confirmText)) return;
+
+    setIsProcessing(true);
+    setProcessingMessage(`Aprobando ${idsToApprove.length} solicitudes masivamente...`);
+    try {
+      await approveMultipleRequests(idsToApprove);
+      setSelectedRequestIds([]);
+    } catch (e) {
+      console.error('Error al aprobar masivamente:', e);
+      setAlert('Error inesperado al procesar la aprobación masiva', 'error');
+    } finally {
+      setIsProcessing(false);
+      setProcessingMessage('Procesando solicitud...');
+    }
+  };
 
   // Filter and sort items for display in the inventory table
   const displayItems = eppItems
@@ -213,13 +270,52 @@ export const AdminDashboard: React.FC = () => {
             {isProcessing && (
               <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex flex-col items-center justify-center z-20 rounded-xl">
                 <div className="loader"></div>
-                <span className="text-xs font-bold text-primary mt-3 uppercase tracking-wider">Procesando solicitud...</span>
+                <span className="text-xs font-bold text-primary mt-3 uppercase tracking-wider">{processingMessage}</span>
               </div>
             )}
-            <h2 className="font-headline-sm text-headline-sm text-primary font-bold mb-4 flex items-center gap-2 border-b border-outline-variant/30 pb-3 shrink-0">
-              <span className="material-symbols-outlined text-[22px]">pending_actions</span>
-              Autorizaciones Pendientes ({pendingRequests.length})
-            </h2>
+            
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-outline-variant/30 pb-3 mb-4 shrink-0">
+              <h2 className="font-headline-sm text-headline-sm text-primary font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[22px]">pending_actions</span>
+                Autorizaciones Pendientes ({pendingRequests.length})
+              </h2>
+
+              {pendingRequests.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                  {/* Toggle select all button */}
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAll}
+                    disabled={isProcessing}
+                    className="text-xs font-semibold text-on-surface-variant hover:text-primary hover:bg-surface-container-low border border-outline-variant px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title={selectedRequestIds.length === pendingRequests.length ? 'Deseleccionar todas' : 'Seleccionar todas las solicitudes'}
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-primary">
+                      {selectedRequestIds.length === pendingRequests.length && pendingRequests.length > 0
+                        ? 'check_box'
+                        : selectedRequestIds.length > 0
+                        ? 'indeterminate_check_box'
+                        : 'check_box_outline_blank'}
+                    </span>
+                    {selectedRequestIds.length === pendingRequests.length ? 'Deseleccionar' : 'Seleccionar todas'}
+                  </button>
+
+                  {/* Mass approve button */}
+                  <button
+                    type="button"
+                    onClick={handleApproveMassive}
+                    disabled={isProcessing}
+                    className="bg-[#166534] hover:bg-green-700 active:scale-[0.98] text-white font-label-md text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all font-bold shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Aprobar las solicitudes seleccionadas o todas las solicitudes pendientes"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">done_all</span>
+                    {selectedRequestIds.length > 0
+                      ? `Aprobar Seleccionadas (${selectedRequestIds.length})`
+                      : `Aprobar Masivamente (${pendingRequests.length})`}
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="flex-grow overflow-y-auto max-h-[500px] pr-1">
               {pendingRequests.length === 0 ? (
@@ -240,47 +336,69 @@ export const AdminDashboard: React.FC = () => {
                     });
                     
                     const isOverMax = req.epp_item ? (req.epp_item.stock - req.quantity < 0) : false;
+                    const isSelected = selectedRequestIds.includes(req.id);
 
                     return (
-                      <div key={req.id} className="border border-outline-variant/80 rounded-lg p-4 bg-surface-container-low/30 hover:bg-surface-container-low/55 transition-colors flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
-                        <div className="text-left flex flex-col gap-1.5 flex-grow">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="bg-primary text-on-primary text-[10px] font-bold px-2 py-0.5 rounded font-mono">
-                              {req.request_number || 'SOL-N/A'}
+                      <div
+                        key={req.id}
+                        className={`border rounded-lg p-4 transition-all flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center ${
+                          isSelected
+                            ? 'border-primary bg-primary/[0.04] shadow-sm ring-1 ring-primary/20'
+                            : 'border-outline-variant/80 bg-surface-container-low/30 hover:bg-surface-container-low/55'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 flex-grow text-left">
+                          {/* Checkbox for selective approval */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSelectOne(req.id)}
+                            className="mt-0.5 text-primary hover:scale-110 transition-transform cursor-pointer shrink-0"
+                            aria-label={isSelected ? 'Deseleccionar solicitud' : 'Seleccionar solicitud'}
+                          >
+                            <span className="material-symbols-outlined text-[20px]">
+                              {isSelected ? 'check_box' : 'check_box_outline_blank'}
                             </span>
-                            <span className="text-xs text-on-surface-variant font-mono-data">
-                              Solicitado: {dateFormatted}
-                            </span>
-                          </div>
-                          
-                          <div>
-                            <span className="font-bold text-on-surface text-base block">
-                              {req.epp_item?.name || 'EPP Desconocido'}
-                            </span>
-                            <span className="text-xs text-on-surface-variant block mt-0.5">
-                              Colaborador: <span className="font-bold text-primary">{req.worker ? `${req.worker.first_name} ${req.worker.last_name}` : 'Cargando...'}</span> ({req.worker?.rut})
-                            </span>
-                          </div>
+                          </button>
 
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs">
-                            <span className="text-on-surface-variant">
-                              Cantidad Pedida: <strong className="text-primary font-mono-data">{req.quantity}</strong>
-                            </span>
-                            <span className="text-on-surface-variant">
-                              Stock en Bodega: <strong className={req.epp_item && req.epp_item.stock <= req.epp_item.min_stock ? 'text-red-600 font-mono-data' : 'text-green-700 font-mono-data'}>{req.epp_item?.stock}</strong>
-                            </span>
-                            {req.epp_item && (
-                              <span className="text-on-surface-variant font-semibold">
-                                Precio Unitario: <strong className="text-primary font-mono-data">${(req.epp_item.price || 0).toLocaleString('es-CL')}</strong> | Total: <strong className="text-primary font-mono-data">${((req.epp_item.price || 0) * req.quantity).toLocaleString('es-CL')}</strong>
+                          <div className="flex flex-col gap-1.5 flex-grow">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="bg-primary text-on-primary text-[10px] font-bold px-2 py-0.5 rounded font-mono">
+                                {req.request_number || 'SOL-N/A'}
                               </span>
+                              <span className="text-xs text-on-surface-variant font-mono-data">
+                                Solicitado: {dateFormatted}
+                              </span>
+                            </div>
+                            
+                            <div>
+                              <span className="font-bold text-on-surface text-base block">
+                                {req.epp_item?.name || 'EPP Desconocido'}
+                              </span>
+                              <span className="text-xs text-on-surface-variant block mt-0.5">
+                                Colaborador: <span className="font-bold text-primary">{req.worker ? `${req.worker.first_name} ${req.worker.last_name}` : 'Cargando...'}</span> ({req.worker?.rut})
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs">
+                              <span className="text-on-surface-variant">
+                                Cantidad Pedida: <strong className="text-primary font-mono-data">{req.quantity}</strong>
+                              </span>
+                              <span className="text-on-surface-variant">
+                                Stock en Bodega: <strong className={req.epp_item && req.epp_item.stock <= req.epp_item.min_stock ? 'text-red-600 font-mono-data' : 'text-green-700 font-mono-data'}>{req.epp_item?.stock}</strong>
+                              </span>
+                              {req.epp_item && (
+                                <span className="text-on-surface-variant font-semibold">
+                                  Precio Unitario: <strong className="text-primary font-mono-data">${(req.epp_item.price || 0).toLocaleString('es-CL')}</strong> | Total: <strong className="text-primary font-mono-data">${((req.epp_item.price || 0) * req.quantity).toLocaleString('es-CL')}</strong>
+                                </span>
+                              )}
+                            </div>
+
+                            {req.notes && (
+                              <p className="text-[11px] text-on-surface-variant italic bg-surface-container-low border border-outline-variant/40 p-2 rounded mt-1.5 leading-normal">
+                                Observaciones: "{req.notes}"
+                              </p>
                             )}
                           </div>
-
-                          {req.notes && (
-                            <p className="text-[11px] text-on-surface-variant italic bg-surface-container-low border border-outline-variant/40 p-2 rounded mt-1.5 leading-normal">
-                              Observaciones: "{req.notes}"
-                            </p>
-                          )}
                         </div>
 
                         <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
