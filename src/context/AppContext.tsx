@@ -327,6 +327,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const navigate = (view: ViewType, workerId?: string | null, targetReportsTab?: 'dashboard' | 'logs') => {
+    // Security Guard: Prevent workers from navigating to administrative views
+    if (user?.role === 'worker' && view !== 'catalog' && view !== 'worker-profile' && view !== 'login') {
+      setActiveView('worker-profile');
+      if (user.workerId) setSelectedWorkerId(user.workerId);
+      setIsMobileMenuOpen(false);
+      return;
+    }
+
     setActiveView(view);
     if (workerId !== undefined) {
       setSelectedWorkerId(workerId);

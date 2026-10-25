@@ -132,7 +132,7 @@ export const NavBar: React.FC = () => {
               <span className="material-symbols-outlined">{isMobileMenuOpen ? 'close' : 'menu'}</span>
             </button>
           )}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate(user?.role === 'admin' ? 'admin-dashboard' : 'worker-search')}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate(user?.role === 'admin' ? 'admin-dashboard' : 'worker-profile', user?.workerId)}>
             <img src="/logo.png" alt="Enaex Logo" className="h-6 md:h-7 object-contain mr-1" />
             <span className="hidden sm:inline font-headline-md text-headline-md font-bold text-primary tracking-tight border-l border-outline-variant/60 pl-3 ml-1">EPP Control</span>
             <span className="sm:hidden font-label-lg text-label-lg font-bold text-primary tracking-tight ml-1">EPP Control</span>

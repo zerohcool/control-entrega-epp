@@ -17,6 +17,14 @@ const AppContent: React.FC = () => {
   }, [activeView]);
 
   const renderActiveView = () => {
+    // Security Guard: Workers can only access their profile and the EPP catalog
+    if (user?.role === 'worker') {
+      if (activeView === 'catalog') {
+        return <EPPCatalog />;
+      }
+      return <WorkerProfile />;
+    }
+
     switch (activeView) {
       case 'login':
         return <Login />;

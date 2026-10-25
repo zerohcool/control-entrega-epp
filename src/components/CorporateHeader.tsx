@@ -6,8 +6,9 @@ interface CorporateHeaderProps {
 }
 
 export const CorporateHeader: React.FC<CorporateHeaderProps> = ({ children }) => {
-  const { navigate, currentUserInfo, pendingDeliveriesCount, activeView, cart, setIsCartOpen } = useApp();
+  const { navigate, currentUserInfo, pendingDeliveriesCount, activeView, cart, setIsCartOpen, user, logout } = useApp();
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const isAdmin = user?.role === 'admin';
 
   return (
     <header className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4 print:border-b-2 print:border-primary/20 print:border-t-0 print:border-x-0 print:rounded-none print:p-0 print:pb-4 print:shadow-none w-full shrink-0">
@@ -28,7 +29,7 @@ export const CorporateHeader: React.FC<CorporateHeaderProps> = ({ children }) =>
         </div>
       </div>
 
-      {/* Right: Master Controls + Cart + Notification Bell + User Avatar */}
+      {/* Right: Master Controls + Cart + (Admin Bell / Worker Navigation) + User Avatar */}
       <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto relative print:hidden">
         {children}
 
@@ -49,23 +50,53 @@ export const CorporateHeader: React.FC<CorporateHeaderProps> = ({ children }) =>
           </button>
         )}
 
-        {/* Notification Bell with Real Pending Authorizations Badge & Direct Navigation */}
-        <button 
-          onClick={() => navigate('admin-dashboard')}
-          className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-          title={`Ver autorizaciones pendientes (${pendingDeliveriesCount})`}
-        >
-          <span className="material-symbols-outlined text-[22px]">notifications</span>
-          {pendingDeliveriesCount > 0 && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-[#ea000c] text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white">
-              {pendingDeliveriesCount}
-            </span>
-          )}
-        </button>
+        {/* ADMIN ONLY: Notification Bell with Real Pending Authorizations Badge & Direct Navigation */}
+        {isAdmin && (
+          <button 
+            onClick={() => navigate('admin-dashboard')}
+            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            title={`Ver autorizaciones pendientes (${pendingDeliveriesCount})`}
+          >
+            <span className="material-symbols-outlined text-[22px]">notifications</span>
+            {pendingDeliveriesCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-[#ea000c] text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white">
+                {pendingDeliveriesCount}
+              </span>
+            )}
+          </button>
+        )}
 
-        {/* User Avatar Circle with Dynamic Session Initials */}
+        {/* WORKER ONLY: Quick Return to Profile & Logout */}
+        {!isAdmin && user && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => navigate('worker-profile', user.workerId)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              title="Volver a mi Ficha de Colaborador"
+            >
+              <span className="material-symbols-outlined text-[16px]">badge</span>
+              <span className="hidden sm:inline">Mi Ficha</span>
+            </button>
+            <button
+              onClick={logout}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-red-600 hover:bg-red-50 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              title="Cerrar sesión"
+            >
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+              <span className="hidden sm:inline">Salir</span>
+            </button>
+          </div>
+        )}
+
+        {/* User Avatar Circle */}
         <div 
-          onClick={() => navigate('admin-dashboard')}
+          onClick={() => {
+            if (isAdmin) {
+              navigate('admin-dashboard');
+            } else if (user?.workerId) {
+              navigate('worker-profile', user.workerId);
+            }
+          }}
           className="relative cursor-pointer" 
           title={`${currentUserInfo.fullName} (${currentUserInfo.role})`}
         >
