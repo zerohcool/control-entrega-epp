@@ -3,8 +3,7 @@ import { useApp } from '../context/AppContext';
 import { getCategoryIcon } from '../models/types';
 
 export const NavBar: React.FC = () => {
-  const { user, logout, activeView, navigate, cart, removeFromCart, updateCartQuantity, submitCartRequest, isMobileMenuOpen, setIsMobileMenuOpen, workers, selectedWorkerId, setAlert } = useApp();
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { user, logout, activeView, navigate, cart, removeFromCart, updateCartQuantity, submitCartRequest, isMobileMenuOpen, setIsMobileMenuOpen, workers, selectedWorkerId, setAlert, isCartOpen, setIsCartOpen } = useApp();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [workerSearchQuery, setWorkerSearchQuery] = useState('');
@@ -121,7 +120,7 @@ export const NavBar: React.FC = () => {
 
   return (
     <>
-      <header className={`fixed top-0 left-0 w-full ${user?.role === 'admin' ? 'md:left-[260px] md:w-[calc(100%-260px)]' : ''} z-50 flex justify-between items-center px-margin-page h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline ${user?.role === 'admin' && activeView !== 'catalog' ? 'md:hidden' : ''} print:hidden`}>
+      <header className={`fixed top-0 left-0 w-full ${user?.role === 'admin' ? 'md:left-[260px] md:w-[calc(100%-260px)] md:hidden' : ''} z-50 flex justify-between items-center px-margin-page h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline print:hidden`}>
         <div className="flex items-center gap-2">
           {/* Hamburger Menu on mobile for Admins */}
           {user?.role === 'admin' && (

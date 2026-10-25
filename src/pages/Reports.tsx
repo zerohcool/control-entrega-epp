@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { getCategoryIcon } from '../models/types';
+import { CorporateHeader } from '../components/CorporateHeader';
 
 export const Reports: React.FC = () => {
   const { 
@@ -9,9 +10,6 @@ export const Reports: React.FC = () => {
     deleteHistoryRecord, 
     reportsTab, 
     setReportsTab, 
-    navigate, 
-    currentUserInfo, 
-    pendingDeliveriesCount,
     eppItems
   } = useApp();
 
@@ -703,170 +701,121 @@ export const Reports: React.FC = () => {
     <div className="flex-grow p-4 sm:p-6 lg:p-8 flex flex-col gap-6 bg-[#f8fafc] text-left max-w-[1440px] mx-auto w-full transition-all">
       
       {/* 1. Official Corporate Document Header Banner (Master Date Filter) */}
-      <header className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4 print:border-b-2 print:border-primary/20 print:border-t-0 print:border-x-0 print:rounded-none print:p-0 print:pb-4 print:shadow-none">
-        
-        {/* Left: Enaex Corporate Brand Details */}
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <img src="/logo.png" alt="Enaex Servicios S.A." className="h-11 sm:h-12 object-contain shrink-0" />
-          <div className="border-l border-slate-300 pl-4">
-            <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight uppercase">
-              ENAEX SERVICIOS S.A.
-            </h1>
-            <p className="text-xs font-mono font-bold text-slate-700 tracking-wide">
-              RUT: 76.041.871-4
-            </p>
-            <p className="text-[11px] font-medium text-slate-500 mt-0.5">
-              <span className="font-bold text-[#ea000c]">Planta:</span> Enaex Planta Sierra Gorda
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Master Date Range Picker + Notification Bell + User Avatar */}
-        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto relative print:hidden">
-          
-          {/* Master Date Range Button (Governs entire dashboard) */}
-          <div className="relative">
-            <button
-              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-2xs cursor-pointer"
-              title="Filtro maestro de fechas del Dashboard"
-            >
-              <span className="material-symbols-outlined text-[18px] text-slate-500">calendar_month</span>
-              <span>{dateRangeLabel}</span>
-              <span className="material-symbols-outlined text-[18px] text-slate-400">arrow_drop_down</span>
-            </button>
-
-            {/* Date Range Modal / Popover Dropdown */}
-            {isDatePickerOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Rango de Fechas
-                  </span>
-                  <button
-                    onClick={() => setIsDatePickerOpen(false)}
-                    className="text-slate-400 hover:text-slate-700 text-sm font-bold"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Preset Chips */}
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    onClick={() => handleApplyPreset('current_month')}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
-                      dateRangePreset === 'current_month' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    Mes actual
-                  </button>
-                  <button
-                    onClick={() => handleApplyPreset('last_30_days')}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
-                      dateRangePreset === 'last_30_days' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    Últimos 30 días
-                  </button>
-                  <button
-                    onClick={() => handleApplyPreset('last_6_months')}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
-                      dateRangePreset === 'last_6_months' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    Últimos 6 meses
-                  </button>
-                  <button
-                    onClick={() => handleApplyPreset('year_2026')}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
-                      dateRangePreset === 'year_2026' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    Año 2026
-                  </button>
-                </div>
-
-                {/* Custom Pickers */}
-                <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 text-xs">
-                  <div>
-                    <label className="text-slate-500 font-medium block mb-1">Desde:</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => {
-                        setStartDate(e.target.value);
-                        setDateRangePreset('custom');
-                      }}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-slate-500 font-medium block mb-1">Hasta:</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => {
-                        setEndDate(e.target.value);
-                        setDateRangePreset('custom');
-                      }}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-                  <button
-                    onClick={() => {
-                      setStartDate('');
-                      setEndDate('');
-                      setDateRangePreset('all');
-                      setIsDatePickerOpen(false);
-                    }}
-                    className="text-xs text-red-600 hover:underline font-bold"
-                  >
-                    Restablecer
-                  </button>
-                  <button
-                    onClick={() => setIsDatePickerOpen(false)}
-                    className="px-3 py-1.5 bg-[#ea000c] text-white font-bold text-xs rounded-lg shadow-sm hover:bg-red-700 cursor-pointer"
-                  >
-                    Aplicar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Notification Bell with Real Pending Authorizations Badge & Direct Navigation */}
-          <button 
-            onClick={() => navigate('admin-dashboard')}
-            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            title={`Ver autorizaciones pendientes (${pendingDeliveriesCount})`}
+      <CorporateHeader>
+        {/* Master Date Range Button (Governs entire dashboard) */}
+        <div className="relative">
+          <button
+            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-2xs cursor-pointer"
+            title="Filtro maestro de fechas del Dashboard"
           >
-            <span className="material-symbols-outlined text-[22px]">notifications</span>
-            {pendingDeliveriesCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-[#ea000c] text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white">
-                {pendingDeliveriesCount}
-              </span>
-            )}
+            <span className="material-symbols-outlined text-[18px] text-slate-500">calendar_month</span>
+            <span>{dateRangeLabel}</span>
+            <span className="material-symbols-outlined text-[18px] text-slate-400">arrow_drop_down</span>
           </button>
 
-          {/* User Avatar Circle with Dynamic Session Initials */}
-          <div 
-            onClick={() => navigate('admin-dashboard')}
-            className="relative cursor-pointer" 
-            title={`${currentUserInfo.fullName} (${currentUserInfo.role})`}
-          >
-            <div className="w-9 h-9 rounded-full bg-[#ea000c] text-white flex items-center justify-center font-bold text-xs shadow-2xs ring-2 ring-slate-100 select-none">
-              {currentUserInfo.initials}
+          {/* Date Range Modal / Popover Dropdown */}
+          {isDatePickerOpen && (
+            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Rango de Fechas
+                </span>
+                <button
+                  onClick={() => setIsDatePickerOpen(false)}
+                  className="text-slate-400 hover:text-slate-700 text-sm font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Preset Chips */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => handleApplyPreset('current_month')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
+                    dateRangePreset === 'current_month' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Mes actual
+                </button>
+                <button
+                  onClick={() => handleApplyPreset('last_30_days')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
+                    dateRangePreset === 'last_30_days' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Últimos 30 días
+                </button>
+                <button
+                  onClick={() => handleApplyPreset('last_6_months')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
+                    dateRangePreset === 'last_6_months' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Últimos 6 meses
+                </button>
+                <button
+                  onClick={() => handleApplyPreset('year_2026')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
+                    dateRangePreset === 'year_2026' ? 'bg-[#ea000c] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Año 2026
+                </button>
+              </div>
+
+              {/* Custom Pickers */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div>
+                  <label className="text-slate-500 font-medium block mb-1">Desde:</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setDateRangePreset('custom');
+                    }}
+                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-500 font-medium block mb-1">Hasta:</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setDateRangePreset('custom');
+                    }}
+                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => {
+                    setStartDate('');
+                    setEndDate('');
+                    setDateRangePreset('all');
+                    setIsDatePickerOpen(false);
+                  }}
+                  className="text-xs text-red-600 hover:underline font-bold"
+                >
+                  Restablecer
+                </button>
+                <button
+                  onClick={() => setIsDatePickerOpen(false)}
+                  className="px-3 py-1.5 bg-[#ea000c] text-white font-bold text-xs rounded-lg shadow-sm hover:bg-red-700 cursor-pointer"
+                >
+                  Aplicar
+                </button>
+              </div>
             </div>
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
-          </div>
-
+          )}
         </div>
-
-      </header>
+      </CorporateHeader>
 
       {/* 2. Page Title Bar + Action Buttons */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-1 border-b border-slate-200/80">

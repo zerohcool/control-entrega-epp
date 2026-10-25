@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { CorporateHeader } from '../components/CorporateHeader';
 import type { EPPItem } from '../models/types';
 
 // Convert raw image uploads to optimized WebP base64 Data URLs
@@ -243,16 +244,12 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="px-margin-page py-stack-lg max-w-container-max mx-auto w-full text-left flex flex-col gap-stack-lg">
       
+      {/* Official Corporate Document Header Banner */}
+      <CorporateHeader />
+
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-outline-variant pb-stack-md shrink-0">
         <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="text-xs font-extrabold text-primary uppercase">Enaex Servicios S.A.</span>
-            <span className="text-outline-variant font-bold">•</span>
-            <span className="text-xs font-mono font-bold text-on-surface">RUT: 76.041.871-4</span>
-            <span className="text-outline-variant font-bold">•</span>
-            <span className="text-xs font-semibold text-primary">Planta Sierra Gorda</span>
-          </div>
           <h1 className="font-headline-lg text-headline-lg text-primary font-bold tracking-tight">
             Solicitudes e Inventario
           </h1>

@@ -61,6 +61,8 @@ interface AppContextType {
   quickAddStock: (sku: string, quantity: number) => boolean;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
+  isCartOpen: boolean;
+  setIsCartOpen: (open: boolean) => void;
   suppliers: Supplier[];
   historyLogs: HistoryLog[];
   registerWorker: (workerData: Omit<Worker, 'id' | 'created_at' | 'status'>) => void;
@@ -118,6 +120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [alertNotification, setAlertNotification] = useState<AlertNotification | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [reportsTab, setReportsTab] = useState<'dashboard' | 'logs'>('dashboard');
 
   // Request Submission loaders
@@ -625,6 +628,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       quickAddStock,
       isMobileMenuOpen,
       setIsMobileMenuOpen,
+      isCartOpen,
+      setIsCartOpen,
       suppliers,
       historyLogs,
       registerWorker,

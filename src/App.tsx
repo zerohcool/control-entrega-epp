@@ -50,7 +50,7 @@ const AppContent: React.FC = () => {
       <main
         className={`flex-grow flex flex-col ${
           showSideNav ? 'md:ml-[260px] print:ml-0' : ''
-        } ${showTopNav ? (user?.role === 'admin' && activeView !== 'catalog' ? 'pt-16 md:pt-0' : 'pt-16') : ''} transition-all duration-200 ease-in-out`}
+        } ${showTopNav ? (user?.role === 'admin' ? 'pt-16 md:pt-0' : 'pt-16') : ''} transition-all duration-200 ease-in-out`}
       >
         {renderActiveView()}
 
