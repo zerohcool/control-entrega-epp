@@ -35,11 +35,22 @@ export const Reports: React.FC = () => {
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [hoveredPeakIndex, setHoveredPeakIndex] = useState<number | null>(null);
 
-  // Local state for Product Consumption Averages Table
+  // Local state for Product Consumption Averages Table (Unidades)
+  type ProductSortField = 'name' | 'stock' | 'delivered' | 'weekly' | 'monthly' | 'autonomy' | 'status';
   const [productTableSearch, setProductTableSearch] = useState('');
   const [productTableCategory, setProductTableCategory] = useState('Todas');
-  const [productSortBy, setProductSortBy] = useState<'weekly' | 'monthly' | 'stock' | 'name'>('weekly');
+  const [productSortBy, setProductSortBy] = useState<ProductSortField>('weekly');
   const [productSortAsc, setProductSortAsc] = useState(false);
+
+  const handleProductSort = (field: ProductSortField) => {
+    if (productSortBy === field) {
+      setProductSortAsc(!productSortAsc);
+    } else {
+      setProductSortBy(field);
+      // For text name default to ascending (A-Z); for metrics/dates default to descending (highest first)
+      setProductSortAsc(field === 'name');
+    }
+  };
 
   const handleDeleteLog = async (id: string, type: 'Entrega' | 'Rechazo' | 'Ingreso') => {
     if (!confirm('¿Está seguro de que desea eliminar este registro del historial de movimientos? Esta acción no se puede deshacer.')) {
@@ -549,16 +560,39 @@ export const Reports: React.FC = () => {
       }
       return true;
     }).sort((a, b) => {
+      if (productSortBy === 'name') {
+        return productSortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+      }
+      if (productSortBy === 'stock') {
+        return productSortAsc ? a.stock - b.stock : b.stock - a.stock;
+      }
+      if (productSortBy === 'delivered') {
+        return productSortAsc ? a.deliveredQty - b.deliveredQty : b.deliveredQty - a.deliveredQty;
+      }
       if (productSortBy === 'weekly') {
         return productSortAsc ? a.weeklyAvg - b.weeklyAvg : b.weeklyAvg - a.weeklyAvg;
       }
       if (productSortBy === 'monthly') {
         return productSortAsc ? a.monthlyAvg - b.monthlyAvg : b.monthlyAvg - a.monthlyAvg;
       }
-      if (productSortBy === 'stock') {
-        return productSortAsc ? a.stock - b.stock : b.stock - a.stock;
+      if (productSortBy === 'autonomy') {
+        const autA = isFinite(a.autonomyWeeks) ? a.autonomyWeeks : 99999;
+        const autB = isFinite(b.autonomyWeeks) ? b.autonomyWeeks : 99999;
+        return productSortAsc ? autA - autB : autB - autA;
       }
-      return productSortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+      if (productSortBy === 'status') {
+        const statusRank = (label: string) => {
+          if (label.includes('Agotado')) return 1;
+          if (label.includes('Crítico')) return 2;
+          if (label.includes('Alerta')) return 3;
+          if (label.includes('Óptimo')) return 4;
+          return 5;
+        };
+        const rankA = statusRank(a.statusAlert.label);
+        const rankB = statusRank(b.statusAlert.label);
+        return productSortAsc ? rankA - rankB : rankB - rankA;
+      }
+      return 0;
     });
   }, [eppItems, baselineTopEpps, entregas, rawDeliveredQty, periodDuration, productTableCategory, productTableSearch, productSortBy, productSortAsc]);
 
@@ -1688,14 +1722,14 @@ export const Reports: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                      Promedios de Consumo de EPP (Semanal y Mensual)
+                      Promedios de Consumo de EPP en Unidades (Semanal y Mensual)
                     </h3>
                     <span className="text-[11px] font-bold bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200">
                       Período analizado: {periodDuration.days} días (~{periodDuration.weeks.toFixed(1)} semanas)
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Monitoreo estadístico de rotación, demanda semanal / mensual y cálculo de autonomía de inventario por producto.
+                    Demanda física y rotación en unidades entregadas a trabajadores (sin valorización económica). Todas las columnas son ordenables.
                   </p>
                 </div>
               </div>
@@ -1796,73 +1830,145 @@ export const Reports: React.FC = () => {
               <table className="w-full text-left border-collapse min-w-[780px]">
                 <thead>
                   <tr className="border-b border-slate-200 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    {/* 1. Producto / EPP */}
                     <th
-                      onClick={() => {
-                        if (productSortBy === 'name') setProductSortAsc(!productSortAsc);
-                        else { setProductSortBy('name'); setProductSortAsc(false); }
-                      }}
-                      className="py-2.5 px-3 cursor-pointer hover:text-slate-700 transition-colors"
+                      onClick={() => handleProductSort('name')}
+                      className={`py-2.5 px-3 cursor-pointer select-none transition-colors group ${
+                        productSortBy === 'name' ? 'text-blue-600 bg-blue-50/50 font-black' : 'hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                      title="Ordenar por Nombre de EPP"
                     >
                       <div className="flex items-center gap-1">
                         Producto / EPP
-                        {productSortBy === 'name' && (
-                          <span className="material-symbols-outlined text-[14px]">
-                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
-                          </span>
-                        )}
+                        <span className={`material-symbols-outlined text-[15px] ${
+                          productSortBy === 'name' ? 'text-blue-600 font-bold' : 'opacity-30 group-hover:opacity-80'
+                        }`}>
+                          {productSortBy === 'name' 
+                            ? (productSortAsc ? 'arrow_upward' : 'arrow_downward') 
+                            : 'unfold_more'}
+                        </span>
                       </div>
                     </th>
+
+                    {/* 2. Stock Actual */}
                     <th
-                      onClick={() => {
-                        if (productSortBy === 'stock') setProductSortAsc(!productSortAsc);
-                        else { setProductSortBy('stock'); setProductSortAsc(false); }
-                      }}
-                      className="py-2.5 px-3 text-center cursor-pointer hover:text-slate-700 transition-colors"
+                      onClick={() => handleProductSort('stock')}
+                      className={`py-2.5 px-3 text-center cursor-pointer select-none transition-colors group ${
+                        productSortBy === 'stock' ? 'text-blue-600 bg-blue-50/50 font-black' : 'hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                      title="Ordenar por Stock Actual en Unidades"
                     >
                       <div className="flex items-center justify-center gap-1">
-                        Stock Actual
-                        {productSortBy === 'stock' && (
-                          <span className="material-symbols-outlined text-[14px]">
-                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
-                          </span>
-                        )}
+                        Stock Actual (Uds)
+                        <span className={`material-symbols-outlined text-[15px] ${
+                          productSortBy === 'stock' ? 'text-blue-600 font-bold' : 'opacity-30 group-hover:opacity-80'
+                        }`}>
+                          {productSortBy === 'stock' 
+                            ? (productSortAsc ? 'arrow_upward' : 'arrow_downward') 
+                            : 'unfold_more'}
+                        </span>
                       </div>
                     </th>
-                    <th className="py-2.5 px-3 text-center">Consumo Total</th>
+
+                    {/* 3. Consumo Total */}
                     <th
-                      onClick={() => {
-                        if (productSortBy === 'weekly') setProductSortAsc(!productSortAsc);
-                        else { setProductSortBy('weekly'); setProductSortAsc(false); }
-                      }}
-                      className="py-2.5 px-3 text-center cursor-pointer hover:text-slate-700 transition-colors bg-blue-50/40"
+                      onClick={() => handleProductSort('delivered')}
+                      className={`py-2.5 px-3 text-center cursor-pointer select-none transition-colors group ${
+                        productSortBy === 'delivered' ? 'text-blue-600 bg-blue-50/50 font-black' : 'hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                      title="Ordenar por Consumo Total del Período en Unidades"
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        Consumo Total (Uds)
+                        <span className={`material-symbols-outlined text-[15px] ${
+                          productSortBy === 'delivered' ? 'text-blue-600 font-bold' : 'opacity-30 group-hover:opacity-80'
+                        }`}>
+                          {productSortBy === 'delivered' 
+                            ? (productSortAsc ? 'arrow_upward' : 'arrow_downward') 
+                            : 'unfold_more'}
+                        </span>
+                      </div>
+                    </th>
+
+                    {/* 4. Promedio Semanal */}
+                    <th
+                      onClick={() => handleProductSort('weekly')}
+                      className={`py-2.5 px-3 text-center cursor-pointer select-none transition-colors group ${
+                        productSortBy === 'weekly' ? 'text-blue-700 bg-blue-100/70 font-black' : 'text-blue-600/80 bg-blue-50/30 hover:text-blue-700 hover:bg-blue-50/60'
+                      }`}
+                      title="Ordenar por Promedio Semanal en Unidades"
                     >
                       <div className="flex items-center justify-center gap-1 text-blue-700">
-                        Promedio Semanal
-                        {productSortBy === 'weekly' && (
-                          <span className="material-symbols-outlined text-[14px]">
-                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
-                          </span>
-                        )}
+                        Promedio Semanal (Uds)
+                        <span className={`material-symbols-outlined text-[15px] ${
+                          productSortBy === 'weekly' ? 'text-blue-700 font-bold' : 'opacity-40 group-hover:opacity-80'
+                        }`}>
+                          {productSortBy === 'weekly' 
+                            ? (productSortAsc ? 'arrow_upward' : 'arrow_downward') 
+                            : 'unfold_more'}
+                        </span>
                       </div>
                     </th>
+
+                    {/* 5. Promedio Mensual */}
                     <th
-                      onClick={() => {
-                        if (productSortBy === 'monthly') setProductSortAsc(!productSortAsc);
-                        else { setProductSortBy('monthly'); setProductSortAsc(false); }
-                      }}
-                      className="py-2.5 px-3 text-center cursor-pointer hover:text-slate-700 transition-colors bg-indigo-50/40"
+                      onClick={() => handleProductSort('monthly')}
+                      className={`py-2.5 px-3 text-center cursor-pointer select-none transition-colors group ${
+                        productSortBy === 'monthly' ? 'text-indigo-700 bg-indigo-100/70 font-black' : 'text-indigo-600/80 bg-indigo-50/30 hover:text-indigo-700 hover:bg-indigo-50/60'
+                      }`}
+                      title="Ordenar por Promedio Mensual en Unidades"
                     >
                       <div className="flex items-center justify-center gap-1 text-indigo-700">
-                        Promedio Mensual
-                        {productSortBy === 'monthly' && (
-                          <span className="material-symbols-outlined text-[14px]">
-                            {productSortAsc ? 'arrow_upward' : 'arrow_downward'}
-                          </span>
-                        )}
+                        Promedio Mensual (Uds)
+                        <span className={`material-symbols-outlined text-[15px] ${
+                          productSortBy === 'monthly' ? 'text-indigo-700 font-bold' : 'opacity-40 group-hover:opacity-80'
+                        }`}>
+                          {productSortBy === 'monthly' 
+                            ? (productSortAsc ? 'arrow_upward' : 'arrow_downward') 
+                            : 'unfold_more'}
+                        </span>
                       </div>
                     </th>
-                    <th className="py-2.5 px-3 text-center">Autonomía Proyectada</th>
-                    <th className="py-2.5 px-3 text-right">Estado</th>
+
+                    {/* 6. Autonomía Proyectada */}
+                    <th
+                      onClick={() => handleProductSort('autonomy')}
+                      className={`py-2.5 px-3 text-center cursor-pointer select-none transition-colors group ${
+                        productSortBy === 'autonomy' ? 'text-blue-600 bg-blue-50/50 font-black' : 'hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                      title="Ordenar por Tiempo de Autonomía de Stock"
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        Autonomía (Tiempo)
+                        <span className={`material-symbols-outlined text-[15px] ${
+                          productSortBy === 'autonomy' ? 'text-blue-600 font-bold' : 'opacity-30 group-hover:opacity-80'
+                        }`}>
+                          {productSortBy === 'autonomy' 
+                            ? (productSortAsc ? 'arrow_upward' : 'arrow_downward') 
+                            : 'unfold_more'}
+                        </span>
+                      </div>
+                    </th>
+
+                    {/* 7. Estado Logístico */}
+                    <th
+                      onClick={() => handleProductSort('status')}
+                      className={`py-2.5 px-3 text-right cursor-pointer select-none transition-colors group ${
+                        productSortBy === 'status' ? 'text-blue-600 bg-blue-50/50 font-black' : 'hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                      title="Ordenar por Nivel de Criticidad / Estado de Stock"
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Estado Logístico
+                        <span className={`material-symbols-outlined text-[15px] ${
+                          productSortBy === 'status' ? 'text-blue-600 font-bold' : 'opacity-30 group-hover:opacity-80'
+                        }`}>
+                          {productSortBy === 'status' 
+                            ? (productSortAsc ? 'arrow_upward' : 'arrow_downward') 
+                            : 'unfold_more'}
+                        </span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
