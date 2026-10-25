@@ -125,10 +125,10 @@ export const Reports: React.FC = () => {
   const rawIngresosQty = ingresos.reduce((acc, curr) => acc + curr.quantity, 0);
   const rawRechazadosCount = rechazos.length;
 
-  // Use DB numbers if present, or mockup benchmark totals (1.132, 0, 4)
-  const totalDeliveredQty = rawDeliveredQty > 0 ? rawDeliveredQty : 1132;
-  const totalIngresosQty = rawIngresosQty > 0 ? rawIngresosQty : 0;
-  const totalRechazadosCount = rawRechazadosCount > 0 ? rawRechazadosCount : 4;
+  // Use DB numbers strictly from active filtered logs
+  const totalDeliveredQty = rawDeliveredQty;
+  const totalIngresosQty = rawIngresosQty;
+  const totalRechazadosCount = rawRechazadosCount;
 
   // 2. Previous Period Calculation (Standard BI Period-over-Period)
   const { previousPeriodLogs } = useMemo(() => {
@@ -250,71 +250,21 @@ export const Reports: React.FC = () => {
     eppCounts[d.item_name] = (eppCounts[d.item_name] || 0) + d.quantity;
   });
 
-  let topEppName = 'Guantes HY-FLEX';
-  let topEppCount = 295;
-
   const sortedEppEntries = Object.entries(eppCounts).sort((a, b) => b[1] - a[1]);
-  if (sortedEppEntries.length > 0) {
-    topEppName = sortedEppEntries[0][0];
-    topEppCount = sortedEppEntries[0][1];
-  }
-
-  // Baseline Top 10 EPP list matching mockup
-  const baselineTopEpps = [
-    { name: 'Guantes HY-FLEX 11-800', qty: 295, pct: 26 },
-    { name: 'Casco de Seguridad ABS Blanco', qty: 184, pct: 16 },
-    { name: 'Lentes de Seguridad Claros Anti-empañante', qty: 156, pct: 14 },
-    { name: 'Chaleco Reflectante Clase 2', qty: 128, pct: 11 },
-    { name: 'Botas de Seguridad Dieléctricas Bata', qty: 94, pct: 8 },
-    { name: 'Protector Auditivo Tipo Fono', qty: 78, pct: 7 },
-    { name: 'Mascarilla Respirador N95 Partículas', qty: 65, pct: 6 },
-    { name: 'Guantes de Cuero Reforzado Descarne', qty: 52, pct: 5 },
-    { name: 'Arnés de Seguridad 4 Argollas Anticaídas', qty: 42, pct: 4 },
-    { name: 'Buzo Tyvek Protección Química', qty: 30, pct: 3 }
-  ];
+  let topEppName = sortedEppEntries.length > 0 ? sortedEppEntries[0][0] : 'Sin entregas';
+  let topEppCount = sortedEppEntries.length > 0 ? sortedEppEntries[0][1] : 0;
 
   const topEpps = useMemo(() => {
-    if (sortedEppEntries.length >= 3) {
+    if (sortedEppEntries.length > 0) {
+      const totalDelivered = sortedEppEntries.reduce((sum, [, qty]) => sum + qty, 0);
       return sortedEppEntries.slice(0, 10).map(([name, qty]) => ({
         name,
         qty,
-        pct: Math.round((qty / (rawDeliveredQty || 1)) * 100)
+        pct: totalDelivered > 0 ? Math.round((qty / totalDelivered) * 100) : 0
       }));
     }
-    const merged: { name: string; qty: number; pct: number }[] = [];
-    const usedNames = new Set<string>();
-
-    sortedEppEntries.forEach(([name, qty]) => {
-      merged.push({
-        name,
-        qty,
-        pct: Math.round((qty / (totalDeliveredQty || 1)) * 100)
-      });
-      usedNames.add(name);
-    });
-
-    baselineTopEpps.forEach(b => {
-      if (!usedNames.has(b.name) && merged.length < 10) {
-        merged.push(b);
-      }
-    });
-
-    return merged.slice(0, 10);
-  }, [sortedEppEntries, rawDeliveredQty, totalDeliveredQty]);
-
-  // Baseline Top 10 Workers matching mockup
-  const baselineTopWorkers = [
-    { name: 'Juan Pérez Soto', rut: '14.285.391-2', qty: 48, initials: 'JP', bg: 'bg-blue-100 text-blue-800' },
-    { name: 'Carlos Mendoza Vega', rut: '16.742.109-8', qty: 42, initials: 'CM', bg: 'bg-emerald-100 text-emerald-800' },
-    { name: 'Roberto Gómez Díaz', rut: '15.390.412-K', qty: 39, initials: 'RG', bg: 'bg-purple-100 text-purple-800' },
-    { name: 'Miguel Ángel Tapia', rut: '17.821.654-3', qty: 35, initials: 'MT', bg: 'bg-amber-100 text-amber-800' },
-    { name: 'Francisco Morales Ramos', rut: '13.904.567-1', qty: 31, initials: 'FM', bg: 'bg-rose-100 text-rose-800' },
-    { name: 'Jorge Valdivia Castro', rut: '18.234.567-8', qty: 28, initials: 'JV', bg: 'bg-teal-100 text-teal-800' },
-    { name: 'Patricio Silva Araya', rut: '12.876.543-9', qty: 25, initials: 'PS', bg: 'bg-indigo-100 text-indigo-800' },
-    { name: 'Cristian Contreras López', rut: '16.432.876-0', qty: 22, initials: 'CC', bg: 'bg-cyan-100 text-cyan-800' },
-    { name: 'Daniel Rojas González', rut: '19.012.345-6', qty: 19, initials: 'DR', bg: 'bg-orange-100 text-orange-800' },
-    { name: 'Andrés Alquinta Ayala', rut: '15.678.901-2', qty: 16, initials: 'AA', bg: 'bg-red-100 text-red-800' }
-  ];
+    return [];
+  }, [sortedEppEntries]);
 
   const workerCounts: { [details: string]: number } = {};
   entregas.forEach(log => {
@@ -332,19 +282,7 @@ export const Reports: React.FC = () => {
       })
       .sort((a, b) => b.qty - a.qty);
 
-    if (rawWorkers.length >= 3) {
-      return rawWorkers.slice(0, 10);
-    }
-
-    const merged = [...rawWorkers];
-    const usedRuts = new Set(rawWorkers.map(w => w.rut));
-    baselineTopWorkers.forEach(bw => {
-      if (!usedRuts.has(bw.rut) && merged.length < 10) {
-        merged.push(bw);
-      }
-    });
-
-    return merged.slice(0, 10);
+    return rawWorkers.slice(0, 10);
   }, [workerCounts]);
 
   // Period duration in days, weeks, months for averages calculation
@@ -410,33 +348,6 @@ export const Reports: React.FC = () => {
       });
     });
 
-    // Also include baseline top items if not present in eppItems
-    baselineTopEpps.forEach((b, idx) => {
-      const key = b.name.toLowerCase().trim();
-      if (!productsMap.has(key)) {
-        let cat = 'Protección General';
-        if (b.name.includes('Guantes')) cat = 'Protección Manos';
-        else if (b.name.includes('Casco')) cat = 'Protección Cabeza';
-        else if (b.name.includes('Lentes')) cat = 'Protección Visual';
-        else if (b.name.includes('Chaleco') || b.name.includes('Buzo')) cat = 'Ropa Seguridad';
-        else if (b.name.includes('Botas') || b.name.includes('Zapatos')) cat = 'Protección Pies';
-        else if (b.name.includes('Respirador') || b.name.includes('Mascarilla')) cat = 'Protección Respiratoria';
-        else if (b.name.includes('Fono') || b.name.includes('Auditivo')) cat = 'Protección Auditiva';
-        else if (b.name.includes('Arnés')) cat = 'Trabajo en Altura';
-
-        productsMap.set(key, {
-          id: `baseline-${idx}`,
-          sku: `REF-0${idx + 10}`,
-          name: b.name,
-          category: cat,
-          stock: [120, 85, 94, 62, 45, 110, 75, 40, 28, 55][idx] || 50,
-          min_stock: 20,
-          price: 9990,
-          deliveredQty: 0
-        });
-      }
-    });
-
     // 2. Count delivered units in active filtered deliveries (entregas)
     entregas.forEach(d => {
       const key = d.item_name.toLowerCase().trim();
@@ -458,8 +369,8 @@ export const Reports: React.FC = () => {
             sku: d.item_sku || 'REF-N/A',
             name: d.item_name,
             category: d.category || 'General',
-            stock: 30,
-            min_stock: 10,
+            stock: 0,
+            min_stock: 0,
             price: d.price || 0,
             deliveredQty: d.quantity
           });
@@ -467,18 +378,7 @@ export const Reports: React.FC = () => {
       }
     });
 
-    // 3. Fallback: If DB had 0 delivered items (rawDeliveredQty === 0), populate using mockup benchmark counts
-    if (rawDeliveredQty === 0) {
-      baselineTopEpps.forEach(b => {
-        const key = b.name.toLowerCase().trim();
-        const p = productsMap.get(key);
-        if (p && p.deliveredQty === 0) {
-          p.deliveredQty = b.qty;
-        }
-      });
-    }
-
-    // 4. Compute statistics for each product
+    // 3. Compute statistics for each product
     const statsList = Array.from(productsMap.values()).map(p => {
       const weeklyAvg = p.deliveredQty / periodDuration.weeks;
       const monthlyAvg = p.deliveredQty / periodDuration.months;
@@ -594,9 +494,9 @@ export const Reports: React.FC = () => {
       }
       return 0;
     });
-  }, [eppItems, baselineTopEpps, entregas, rawDeliveredQty, periodDuration, productTableCategory, productTableSearch, productSortBy, productSortAsc]);
+  }, [eppItems, entregas, periodDuration, productTableCategory, productTableSearch, productSortBy, productSortAsc]);
 
-  // Categories Breakdown Data (Dynamic from filtered entregas with baseline fallback)
+  // Categories Breakdown Data (Strictly from real database deliveries)
   const categoryData = useMemo(() => {
     const counts: { [category: string]: number } = {};
     entregas.forEach(log => {
@@ -628,17 +528,7 @@ export const Reports: React.FC = () => {
       }));
     }
 
-    return [
-      { label: 'Protección Manos', qty: 587, pct: 52, color: '#3b82f6' },
-      { label: 'Otros', qty: 201, pct: 18, color: '#fed7aa' },
-      { label: 'Protección Respiratoria', qty: 139, pct: 12, color: '#10b981' },
-      { label: 'Protección Visual', qty: 60, pct: 5, color: '#facc15' },
-      { label: 'Protección Piel', qty: 50, pct: 4, color: '#db2777' },
-      { label: 'Protección Auditiva', qty: 50, pct: 4, color: '#e11d48' },
-      { label: 'Ropa Seguridad', qty: 21, pct: 2, color: '#dc2626' },
-      { label: 'Protección Cabeza', qty: 13, pct: 1, color: '#f97316' },
-      { label: 'Protección Alturas', qty: 3, pct: 0, color: '#14b8a6' }
-    ];
+    return [];
   }, [entregas]);
 
   // Balance Chart Data (Dynamic by month strictly based on real database records)
@@ -1211,33 +1101,44 @@ export const Reports: React.FC = () => {
                 {/* SVG Donut Chart with Interactive Center Label */}
                 <div className="relative w-44 h-44 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    {(() => {
-                      let accumulated = 0;
-                      return categoryData.map((item, idx) => {
-                        const strokeDasharray = `${item.pct * 2.512} ${251.2}`;
-                        const strokeDashoffset = -accumulated * 2.512;
-                        accumulated += item.pct;
-                        const isHovered = hoveredCategory?.label === item.label;
-                        return (
-                          <circle
-                            key={idx}
-                            cx="50"
-                            cy="50"
-                            r="38"
-                            fill="transparent"
-                            stroke={item.color}
-                            strokeWidth={isHovered ? '18' : '15'}
-                            strokeDasharray={strokeDasharray}
-                            strokeDashoffset={strokeDashoffset}
-                            onMouseEnter={() => setHoveredCategory(item)}
-                            onMouseLeave={() => setHoveredCategory(null)}
-                            className="transition-all duration-200 cursor-pointer"
-                          >
-                            <title>{`${item.label}: ${item.qty} unidades (${item.pct}%)`}</title>
-                          </circle>
-                        );
-                      });
-                    })()}
+                    {categoryData.length === 0 ? (
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="38"
+                        fill="transparent"
+                        stroke="#e2e8f0"
+                        strokeWidth="15"
+                      />
+                    ) : (
+                      (() => {
+                        let accumulated = 0;
+                        return categoryData.map((item, idx) => {
+                          const strokeDasharray = `${item.pct * 2.512} ${251.2}`;
+                          const strokeDashoffset = -accumulated * 2.512;
+                          accumulated += item.pct;
+                          const isHovered = hoveredCategory?.label === item.label;
+                          return (
+                            <circle
+                              key={idx}
+                              cx="50"
+                              cy="50"
+                              r="38"
+                              fill="transparent"
+                              stroke={item.color}
+                              strokeWidth={isHovered ? '18' : '15'}
+                              strokeDasharray={strokeDasharray}
+                              strokeDashoffset={strokeDashoffset}
+                              onMouseEnter={() => setHoveredCategory(item)}
+                              onMouseLeave={() => setHoveredCategory(null)}
+                              className="transition-all duration-200 cursor-pointer"
+                            >
+                              <title>{`${item.label}: ${item.qty} unidades (${item.pct}%)`}</title>
+                            </circle>
+                          );
+                        });
+                      })()
+                    )}
                   </svg>
                   {/* Dynamic Center Cutout Text */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
@@ -1268,29 +1169,35 @@ export const Reports: React.FC = () => {
 
                 {/* Categories Legend List with Interactive Hover */}
                 <div className="flex flex-col gap-1.5 w-full text-xs">
-                  {categoryData.map((item, idx) => {
-                    const isHovered = hoveredCategory?.label === item.label;
-                    return (
-                      <div 
-                        key={idx} 
-                        onMouseEnter={() => setHoveredCategory(item)}
-                        onMouseLeave={() => setHoveredCategory(null)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                          isHovered ? 'bg-slate-100 font-bold' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                          <span className={`truncate ${isHovered ? 'text-slate-900 font-bold' : 'text-slate-700 font-semibold'}`}>
-                            {item.label}
+                  {categoryData.length === 0 ? (
+                    <div className="py-4 text-center text-slate-400 text-xs font-medium">
+                      Sin entregas en el período.
+                    </div>
+                  ) : (
+                    categoryData.map((item, idx) => {
+                      const isHovered = hoveredCategory?.label === item.label;
+                      return (
+                        <div 
+                          key={idx} 
+                          onMouseEnter={() => setHoveredCategory(item)}
+                          onMouseLeave={() => setHoveredCategory(null)}
+                          className={`flex items-center justify-between px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                            isHovered ? 'bg-slate-100 font-bold' : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                            <span className={`truncate ${isHovered ? 'text-slate-900 font-bold' : 'text-slate-700 font-semibold'}`}>
+                              {item.label}
+                            </span>
+                          </div>
+                          <span className="font-mono text-slate-600 font-bold shrink-0 ml-2">
+                            {item.qty} unidades ({item.pct}%)
                           </span>
                         </div>
-                        <span className="font-mono text-slate-600 font-bold shrink-0 ml-2">
-                          {item.qty} unidades ({item.pct}%)
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
 
               </div>
@@ -1604,42 +1511,48 @@ export const Reports: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-3">
-                {topEpps.map((item, index) => {
-                  const maxQty = topEpps[0]?.qty || 1;
-                  const barWidth = Math.max(8, Math.round((item.qty / maxQty) * 100));
+                {topEpps.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                    No hay entregas registradas en el período seleccionado.
+                  </div>
+                ) : (
+                  topEpps.map((item, index) => {
+                    const maxQty = topEpps[0]?.qty || 1;
+                    const barWidth = Math.max(8, Math.round((item.qty / maxQty) * 100));
 
-                  return (
-                    <div key={item.name} className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-3 truncate pr-2">
-                          {/* Rank badge */}
-                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
-                            index === 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' :
-                            index === 1 ? 'bg-slate-200 text-slate-800 border border-slate-300' :
-                            index === 2 ? 'bg-amber-800/10 text-amber-900 border border-amber-700/30' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
-                            {index + 1}
-                          </span>
-                          <span className="font-bold text-slate-800 truncate" title={item.name}>
-                            {item.name}
-                          </span>
+                    return (
+                      <div key={item.name} className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-3 truncate pr-2">
+                            {/* Rank badge */}
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                              index === 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                              index === 1 ? 'bg-slate-200 text-slate-800 border border-slate-300' :
+                              index === 2 ? 'bg-amber-800/10 text-amber-900 border border-amber-700/30' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <span className="font-bold text-slate-800 truncate" title={item.name}>
+                              {item.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="font-black text-slate-900">{item.qty} unidades</span>
+                            <span className="font-mono text-slate-400 text-[11px] w-8 text-right">{item.pct}%</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="font-black text-slate-900">{item.qty} unidades</span>
-                          <span className="font-mono text-slate-400 text-[11px] w-8 text-right">{item.pct}%</span>
+                        {/* Gradient Progress Bar */}
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                            style={{ width: `${barWidth}%` }}
+                          />
                         </div>
                       </div>
-                      {/* Gradient Progress Bar */}
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
 
@@ -1658,9 +1571,14 @@ export const Reports: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-3">
-                {topWorkers.map((worker, index) => {
-                  const maxQty = topWorkers[0]?.qty || 1;
-                  const barWidth = Math.max(8, Math.round((worker.qty / maxQty) * 100));
+                {topWorkers.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                    No hay entregas a colaboradores registradas en el período seleccionado.
+                  </div>
+                ) : (
+                  topWorkers.map((worker, index) => {
+                    const maxQty = topWorkers[0]?.qty || 1;
+                    const barWidth = Math.max(8, Math.round((worker.qty / maxQty) * 100));
 
                   return (
                     <div key={worker.name + index} className="flex flex-col gap-1.5">
@@ -1705,7 +1623,8 @@ export const Reports: React.FC = () => {
                       </div>
                     </div>
                   );
-                })}
+                })
+              )}
               </div>
             </div>
 
