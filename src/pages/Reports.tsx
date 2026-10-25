@@ -1233,7 +1233,7 @@ export const Reports: React.FC = () => {
                             onMouseLeave={() => setHoveredCategory(null)}
                             className="transition-all duration-200 cursor-pointer"
                           >
-                            <title>{`${item.label}: ${item.qty} uds. (${item.pct}%)`}</title>
+                            <title>{`${item.label}: ${item.qty} unidades (${item.pct}%)`}</title>
                           </circle>
                         );
                       });
@@ -1244,7 +1244,7 @@ export const Reports: React.FC = () => {
                     {hoveredCategory ? (
                       <div className="flex flex-col items-center justify-center text-center">
                         <span className="text-lg font-black leading-tight" style={{ color: hoveredCategory.color }}>
-                          {hoveredCategory.qty} uds.
+                          {hoveredCategory.qty} unidades
                         </span>
                         <span className="text-[10px] font-bold text-slate-700 mt-0.5 truncate max-w-[110px]" title={hoveredCategory.label}>
                           {hoveredCategory.label}
@@ -1286,7 +1286,7 @@ export const Reports: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-mono text-slate-600 font-bold shrink-0 ml-2">
-                          {item.qty} uds. ({item.pct}%)
+                          {item.qty} unidades ({item.pct}%)
                         </span>
                       </div>
                     );
@@ -1329,13 +1329,13 @@ export const Reports: React.FC = () => {
                     Mes: {balanceData[hoveredBarIndex].month}
                   </span>
                   <span className="text-emerald-400 font-semibold">
-                    ● Ingresos: {balanceData[hoveredBarIndex].ingresos} uds.
+                    ● Ingresos: {balanceData[hoveredBarIndex].ingresos} unidades
                   </span>
                   <span className="text-blue-400 font-semibold">
-                    ● Entregas: {balanceData[hoveredBarIndex].entregas} uds.
+                    ● Entregas: {balanceData[hoveredBarIndex].entregas} unidades
                   </span>
                   <span className="text-slate-300 font-mono text-[9px] pt-0.5 border-t border-slate-800 mt-0.5">
-                    Balance Neto: {balanceData[hoveredBarIndex].ingresos - balanceData[hoveredBarIndex].entregas > 0 ? '+' : ''}{balanceData[hoveredBarIndex].ingresos - balanceData[hoveredBarIndex].entregas} uds.
+                    Balance Neto: {balanceData[hoveredBarIndex].ingresos - balanceData[hoveredBarIndex].entregas > 0 ? '+' : ''}{balanceData[hoveredBarIndex].ingresos - balanceData[hoveredBarIndex].entregas} unidades
                   </span>
                 </div>
               )}
@@ -1400,7 +1400,7 @@ export const Reports: React.FC = () => {
                               opacity={isHovered ? 1 : 0.85}
                               className="transition-all"
                             >
-                              <title>{`${d.month} - Ingresos: ${d.ingresos} uds.`}</title>
+                              <title>{`${d.month} - Ingresos: ${d.ingresos} unidades`}</title>
                             </rect>
                           )}
 
@@ -1415,7 +1415,7 @@ export const Reports: React.FC = () => {
                             opacity={isHovered ? 1 : 0.85}
                             className="transition-all"
                           >
-                            <title>{`${d.month} - Entregas: ${d.entregas} uds.`}</title>
+                            <title>{`${d.month} - Entregas: ${d.entregas} unidades`}</title>
                           </rect>
 
                           {/* Month Label */}
@@ -1626,7 +1626,7 @@ export const Reports: React.FC = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="font-black text-slate-900">{item.qty} uds.</span>
+                          <span className="font-black text-slate-900">{item.qty} unidades</span>
                           <span className="font-mono text-slate-400 text-[11px] w-8 text-right">{item.pct}%</span>
                         </div>
                       </div>
@@ -1693,7 +1693,7 @@ export const Reports: React.FC = () => {
                           </div>
                         </div>
 
-                        <span className="font-black text-slate-900 shrink-0">{worker.qty} uds.</span>
+                        <span className="font-black text-slate-900 shrink-0">{worker.qty} unidades</span>
                       </div>
 
                       {/* Gradient Progress Bar */}
@@ -1796,7 +1796,7 @@ export const Reports: React.FC = () => {
                   <span className="text-lg font-black text-blue-600">
                     {productConsumptionList.reduce((acc, curr) => acc + curr.weeklyAvg, 0).toFixed(1)}
                   </span>
-                  <span className="text-[10px] text-slate-500 font-semibold">uds / semana</span>
+                  <span className="text-[10px] text-slate-500 font-semibold">unidades / semana</span>
                 </div>
               </div>
 
@@ -1808,7 +1808,7 @@ export const Reports: React.FC = () => {
                   <span className="text-lg font-black text-indigo-600">
                     {productConsumptionList.reduce((acc, curr) => acc + curr.monthlyAvg, 0).toFixed(1)}
                   </span>
-                  <span className="text-[10px] text-slate-500 font-semibold">uds / mes</span>
+                  <span className="text-[10px] text-slate-500 font-semibold">unidades / mes</span>
                 </div>
               </div>
 
@@ -1859,7 +1859,7 @@ export const Reports: React.FC = () => {
                       title="Ordenar por Stock Actual en Unidades"
                     >
                       <div className="flex items-center justify-center gap-1">
-                        Stock Actual (Uds)
+                        Stock Actual (Unidades)
                         <span className={`material-symbols-outlined text-[15px] ${
                           productSortBy === 'stock' ? 'text-blue-600 font-bold' : 'opacity-30 group-hover:opacity-80'
                         }`}>
@@ -1879,7 +1879,7 @@ export const Reports: React.FC = () => {
                       title="Ordenar por Consumo Total del Período en Unidades"
                     >
                       <div className="flex items-center justify-center gap-1">
-                        Consumo Total (Uds)
+                        Consumo Total (Unidades)
                         <span className={`material-symbols-outlined text-[15px] ${
                           productSortBy === 'delivered' ? 'text-blue-600 font-bold' : 'opacity-30 group-hover:opacity-80'
                         }`}>
@@ -1899,7 +1899,7 @@ export const Reports: React.FC = () => {
                       title="Ordenar por Promedio Semanal en Unidades"
                     >
                       <div className="flex items-center justify-center gap-1 text-blue-700">
-                        Promedio Semanal (Uds)
+                        Promedio Semanal (Unidades)
                         <span className={`material-symbols-outlined text-[15px] ${
                           productSortBy === 'weekly' ? 'text-blue-700 font-bold' : 'opacity-40 group-hover:opacity-80'
                         }`}>
@@ -1919,7 +1919,7 @@ export const Reports: React.FC = () => {
                       title="Ordenar por Promedio Mensual en Unidades"
                     >
                       <div className="flex items-center justify-center gap-1 text-indigo-700">
-                        Promedio Mensual (Uds)
+                        Promedio Mensual (Unidades)
                         <span className={`material-symbols-outlined text-[15px] ${
                           productSortBy === 'monthly' ? 'text-indigo-700 font-bold' : 'opacity-40 group-hover:opacity-80'
                         }`}>
@@ -2013,10 +2013,10 @@ export const Reports: React.FC = () => {
                               item.stock <= item.min_stock ? 'text-amber-600' :
                               'text-slate-800'
                             }`}>
-                              {item.stock}
+                              {item.stock} unidades
                             </span>
                             <span className="text-[10px] text-slate-400 block font-medium">
-                              mín: {item.min_stock}
+                              mínimo: {item.min_stock}
                             </span>
                           </td>
 
@@ -2025,7 +2025,7 @@ export const Reports: React.FC = () => {
                             <span className="font-extrabold text-slate-900">
                               {item.deliveredQty}
                             </span>
-                            <span className="text-[10px] text-slate-400 block">uds</span>
+                            <span className="text-[10px] text-slate-400 block">unidades</span>
                           </td>
 
                           {/* Promedio Semanal */}
@@ -2035,7 +2035,7 @@ export const Reports: React.FC = () => {
                                 <span className="font-black text-blue-600 text-[13px]">
                                   {item.weeklyAvg.toFixed(1)}
                                 </span>
-                                <span className="text-[10px] text-blue-500/80 font-bold">uds/sem</span>
+                                <span className="text-[10px] text-blue-600/90 font-bold">unidades / sem</span>
                               </div>
                               {/* Mini spark bar */}
                               <div className="w-16 bg-blue-100 h-1.5 rounded-full overflow-hidden mt-1">
@@ -2053,7 +2053,7 @@ export const Reports: React.FC = () => {
                               <span className="font-black text-indigo-700 text-[13px]">
                                 {item.monthlyAvg.toFixed(1)}
                               </span>
-                              <span className="text-[10px] text-indigo-500/80 font-bold">uds/mes</span>
+                              <span className="text-[10px] text-indigo-600/90 font-bold">unidades / mes</span>
                             </div>
                           </td>
 
